@@ -12,8 +12,6 @@ class RequestUtils {
 	) {
 		let authentication = this.getNodeParameter('authentication', 0) as string;
 
-		console.log('RequestUtils originRequest authentication = ', authentication);
-
 		let additionalCredentialOptions = {} as IAdditionalCredentialOptions
 
 		if (authentication === 'feishuCredentialsApi') {
@@ -32,7 +30,7 @@ class RequestUtils {
 					},
 				},
 			};
-		}else if (authentication === 'feishuOauth2Api') {
+		} else if (authentication === 'feishuOauth2Api') {
 
 			options.baseURL = `https://open.feishu.cn`;
 

@@ -4,48 +4,48 @@ import {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
+	NodeConnectionTypes,
 	NodeOperationError,
 } from 'n8n-workflow';
 import ResourceFactory from '../help/builder/ResourceFactory';
+import { Credentials, OutputType } from '../help/type/enums';
 
 const resourceBuilder = ResourceFactory.build(__dirname);
 
 export class FeishuNode implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'Feishu Node',
+		displayName: '飞书',
 		name: 'feishuNode',
-		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-		// eslint-disable-next-line n8n-nodes-base/node-class-description-icon-not-svg
-		icon: 'file:icon.png',
+		subtitle: '={{ $parameter.resource }}:{{ $parameter.operation }}',
+		icon: 'file:icon.svg',
 		group: ['transform'],
-		version: 1,
-		description: 'Feishu Node',
+		version: [1],
+		defaultVersion: 1,
+		description: '飞书 API 集成，支持多种飞书功能',
 		defaults: {
-			name: 'Feishu Node',
+			name: '飞书',
 		},
 		usableAsTool: true,
-		// @ts-ignore
-		inputs: ['main'],
-		// @ts-ignore
-		outputs: ['main'],
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
-				name: 'feishuCredentialsApi',
-				displayName: "应用级别凭证",
+				name: Credentials.FeishuCredentialsApi,
+				displayName: '应用级别凭证',
 				required: true,
 				displayOptions: {
 					show: {
-						authentication: ['feishuCredentialsApi'],
+						authentication: [Credentials.FeishuCredentialsApi],
 					},
 				},
 			},
 			{
-				name: 'feishuOauth2Api',
-				displayName: "用户级别凭证",
+				name: Credentials.FeishuOauth2Api,
+				displayName: '用户级别凭证',
 				required: true,
 				displayOptions: {
 					show: {
-						authentication: ['feishuOauth2Api'],
+						authentication: [Credentials.FeishuOauth2Api],
 					},
 				},
 			},
@@ -58,28 +58,24 @@ export class FeishuNode implements INodeType {
 				options: [
 					{
 						name: '用户级别凭证',
-						value: 'feishuOauth2Api',
+						value: Credentials.FeishuOauth2Api,
 					},
 					{
 						name: '应用级别凭证',
-						value: 'feishuCredentialsApi',
+						value: Credentials.FeishuCredentialsApi,
 					},
 				],
-				default: 'feishuCredentialsApi',
+				default: Credentials.FeishuCredentialsApi,
 			},
-			...resourceBuilder.build()
+			...resourceBuilder.build(),
 		],
 	};
 
-	// The function below is responsible for actually doing whatever this node
-	// is supposed to do. In this case, we're just appending the `myString` property
-	// with whatever the user has entered.
-	// You can make async calls and use `await`.
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 
-		let responseData: IDataObject = {};
-		let returnData = [];
+		// 使用数组初始化，支持多输出
+		let returnData: INodeExecutionData[][] = Array.from({ length: 1 }, () => []);
 
 		const resource = this.getNodeParameter('resource', 0);
 		const operation = this.getNodeParameter('operation', 0);
@@ -87,24 +83,12 @@ export class FeishuNode implements INodeType {
 		const callFunc = resourceBuilder.getCall(resource, operation);
 
 		if (!callFunc) {
-			throw new NodeOperationError(this.getNode(), '未实现方法: ' + resource + '.' + operation);
-		}
-
-		// 聚合
-		if (operation.includes("aggregate")){
-			responseData = await callFunc.call(this, 0);
-			const executionData = this.helpers.constructExecutionMetaData(
-				this.helpers.returnJsonArray(responseData as IDataObject),
-				{ itemData: { item: 0 } },
+			throw new NodeOperationError(
+				this.getNode(),
+				'未实现方法: ' + resource + '.' + operation,
 			);
-			returnData.push(...executionData);
-
-			return [returnData];
 		}
 
-		// Iterates over all input items and add the key "myString" with the
-		// value the parameter "myString" resolves to.
-		// (This could be a different value for each item in case it contains an expression)
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
 				this.logger.debug('call function', {
@@ -113,7 +97,32 @@ export class FeishuNode implements INodeType {
 					itemIndex,
 				});
 
-				responseData = await callFunc.call(this, itemIndex);
+				const responseData = await callFunc.call(this, itemIndex);
+
+				// 检查是否有自定义输出类型
+				if (responseData && typeof responseData === 'object' && 'outputType' in responseData) {
+					const typedResponse = responseData as {
+						outputType: OutputType;
+						outputData?: INodeExecutionData[][];
+					};
+					const { outputType } = typedResponse;
+
+					if (outputType === OutputType.Multiple && typedResponse.outputData) {
+						// 多输出模式：直接使用返回的输出数据
+						returnData = typedResponse.outputData;
+					} else if (outputType === OutputType.None) {
+						// 无输出模式
+						return [];
+					}
+					// OutputType.Single 会走下面的默认处理
+				} else {
+					// 默认单输出模式
+					const executionData = this.helpers.constructExecutionMetaData(
+						this.helpers.returnJsonArray(responseData as IDataObject),
+						{ itemData: { item: itemIndex } },
+					);
+					returnData[0].push(...executionData);
+				}
 			} catch (error) {
 				this.logger.error('call function error', {
 					resource,
@@ -123,37 +132,18 @@ export class FeishuNode implements INodeType {
 					stack: error.stack,
 				});
 
-				// This node should never fail but we want to showcase how
-				// to handle errors.
 				if (this.continueOnFail()) {
-					let errorJson = {
-						error: error.message
-					}
-					if (error.name === 'NodeApiError'){
-						errorJson.error = error?.cause?.error
-					}
-
-					returnData.push({
-						json: errorJson,
-						pairedItem: itemIndex,
-					});
+					const executionErrorData = this.helpers.constructExecutionMetaData(
+						this.helpers.returnJsonArray({ error: error.message }),
+						{ itemData: { item: itemIndex } },
+					);
+					returnData[0].push(...executionErrorData);
 					continue;
-				}else if (error.name === 'NodeApiError'){
-					throw error
-				}else {
-					throw new NodeOperationError(this.getNode(), error, {
-						message: error.message,
-						itemIndex,
-					});
 				}
+				throw error;
 			}
-			const executionData = this.helpers.constructExecutionMetaData(
-				this.helpers.returnJsonArray(responseData as IDataObject),
-				{ itemData: { item: itemIndex } },
-			);
-			returnData.push(...executionData);
 		}
 
-		return [returnData];
+		return returnData;
 	}
 }

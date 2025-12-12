@@ -1,35 +1,39 @@
 {
-  "name": "n8n-nodes-feishu-lite",
+  "name": "@luka-cat-mimi/n8n-nodes-feishu",
   "version": "0.4.3",
-  "description": "feishu node",
+  "description": "飞书 N8N 集成插件",
   "keywords": [
+    "n8n",
+    "n8n-node",
     "n8n-community-node-package",
     "feishu",
     "飞书"
   ],
   "license": "MIT",
-  "homepage": "",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "homepage": "https://github.com/luka-n8n-nodes/n8n-nodes-feishu#readme",
   "author": {
-    "name": "blowsnow",
-    "email": "im.blowsnow@gmail.com"
+    "name": "luka-cat",
+    "email": "luka.cat.mimi@gmail.com"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/other-blowsnow/n8n-nodes-feishu-lite"
+    "url": "git+https://github.com/luka-n8n-nodes/n8n-nodes-feishu.git"
   },
   "engines": {
-    "node": ">=18.10",
-    "pnpm": ">=9.1"
+    "node": ">=20.15"
   },
-  "packageManager": "pnpm@9.1.4",
   "main": "index.js",
   "scripts": {
-    "build": "tsc && gulp build:icons",
+    "build": "npx rimraf dist && tsc && gulp build:icons",
     "dev": "tsc --watch",
-    "format": "prettier nodes credentials --write",
-    "lint": "eslint nodes credentials package.json",
-    "lintfix": "eslint nodes credentials package.json --fix",
-    "prepublishOnly": "pnpm build && pnpm lint -c .eslintrc.prepublish.js nodes credentials package.json"
+    "format": "prettier credentials nodes --write",
+    "lint": "eslint \"credentials/**/*.ts\" \"nodes/**/*.ts\" package.json",
+    "lintfix": "eslint \"credentials/**/*.ts\" \"nodes/**/*.ts\" package.json --fix",
+    "prepublishOnly": "npm run build && npm run lint"
   },
   "files": [
     "dist"
@@ -45,20 +49,19 @@
     ]
   },
   "devDependencies": {
-    "@types/node": "^22.13.1",
-    "@typescript-eslint/parser": "^7.15.0",
-    "eslint": "^8.56.0",
-    "eslint-plugin-n8n-nodes-base": "^1.16.1",
-    "express": "^4.21.2",
+    "@types/node": "^20.0.0",
+    "@n8n/node-cli": "*",
+    "eslint": "9.32.0",
     "form-data": "^4.0.1",
+    "prettier": "3.6.2",
+    "release-it": "^19.0.4",
+    "typescript": "5.9.2",
     "glob": "^10.4.5",
-    "gulp": "^4.0.2",
-    "prettier": "^3.3.2",
-    "require-glob": "^4.1.0",
-    "typescript": "^5.5.3"
+    "gulp": "^5.0.0",
+    "require-glob": "^4.1.0"
   },
   "peerDependencies": {
-    "n8n-workflow": "^1.115.0"
+    "n8n-workflow": "*"
   },
   "dependencies": {
     "xml-js": "^1.6.11"

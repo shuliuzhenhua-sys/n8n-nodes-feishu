@@ -1,7 +1,9 @@
-import {IDataObject, IExecuteFunctions, NodeOperationError} from 'n8n-workflow';
+import {IDataObject, IExecuteFunctions, INodeProperties, NodeOperationError, sleep} from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 import nodeUtils from "../../../help/utils/NodeUtils";
+
+interface RequestOptions { batching?: { batch?: { batchSize?: number; batchInterval?: number } }; timeout?: number; }
 
 const SpreadsheetValuesWriteOperate: ResourceOperations = {
 	name: '自动写入数据',
@@ -36,50 +38,42 @@ const SpreadsheetValuesWriteOperate: ResourceOperations = {
 			type: 'number',
 			required: true,
 			default: 1,
-		}
-	],
+		},
+		{ displayName: 'Options', name: 'options', type: 'collection', placeholder: 'Add option', default: {}, options: [{ displayName: 'Batching', name: 'batching', placeholder: 'Add Batching', type: 'fixedCollection', typeOptions: { multipleValues: false }, default: { batch: {} }, options: [{ displayName: 'Batching', name: 'batch', values: [{ displayName: 'Items per Batch', name: 'batchSize', type: 'number', typeOptions: { minValue: -1 }, default: 50, description: '输入将被分批处理以限制请求。 -1 表示禁用。0 将被视为 1。' }, { displayName: 'Batch Interval (Ms)', name: 'batchInterval', type: 'number', typeOptions: { minValue: 0 }, default: 1000, description: '每批请求之间的时间（毫秒）。0 表示禁用。' }] }] }, { displayName: 'Timeout', name: 'timeout', type: 'number', typeOptions: { minValue: 0 }, default: 0, description: '等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。' }] },
+	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 		const spreadsheetToken = this.getNodeParameter('spreadsheetToke', index) as string;
 		const sheetId = this.getNodeParameter('sheetId', index) as string;
 		const startLine = this.getNodeParameter('startLine', index) as number;
 		const values = nodeUtils.getNodeJsonData(this, 'values', index) as IDataObject[];
+		const options = this.getNodeParameter('options', index, {}) as RequestOptions;
+		const handleBatchDelay = async (): Promise<void> => { const batchSize = options.batching?.batch?.batchSize ?? -1; const batchInterval = options.batching?.batch?.batchInterval ?? 0; if (index > 0 && batchSize >= 0 && batchInterval > 0) { const effectiveBatchSize = batchSize > 0 ? batchSize : 1; if (index % effectiveBatchSize === 0) await sleep(batchInterval); } };
+		await handleBatchDelay();
 
 		if (!Array.isArray(values) || values.length === 0) {
 			throw new NodeOperationError(this.getNode(), '数据不能为空');
 		}
 
-		function getColumnHeader(index: number): string {
+		function getColumnHeader(idx: number): string {
 			let column = '';
-			index++; // Adjust index to 1-based (A=1, B=2, ...)
-
-			while (index > 0) {
-				const remainder = (index - 1) % 26;
+			idx++;
+			while (idx > 0) {
+				const remainder = (idx - 1) % 26;
 				column = String.fromCharCode(65 + remainder) + column;
-				index = Math.floor((index - 1) / 26);
+				idx = Math.floor((idx - 1) / 26);
 			}
 			return column;
 		}
 
 		const headers = Object.values(values[0]);
-		// 使用headers 获取长度 A-Z AA-ZZ AAA-ZZZ
 		const maxColumnHeader = getColumnHeader(headers.length);
+		const range = `${sheetId}!A${startLine}:${maxColumnHeader}${startLine - 1 + values.length}`;
 
-		const range = `${sheetId}!A${startLine}:${maxColumnHeader}${startLine - 1 + values.length }`;
+		const body: IDataObject = { valueRange: { range, values } };
+		const requestOptions: any = { method: 'PUT', url: `/open-apis/sheets/v2/spreadsheets/${spreadsheetToken}/values`, body };
+		if (options.timeout) requestOptions.timeout = options.timeout;
 
-		const body: IDataObject = {
-			valueRange: {
-				range,
-				values: values,
-			},
-		};
-
-		const response = await RequestUtils.request.call(this, {
-			method: 'PUT',
-			url: `/open-apis/sheets/v2/spreadsheets/${spreadsheetToken}/values`,
-			body,
-		});
-
-		return response;
+		return RequestUtils.request.call(this, requestOptions);
 	},
 };
 

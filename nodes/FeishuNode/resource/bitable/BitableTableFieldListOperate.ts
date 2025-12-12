@@ -1,6 +1,16 @@
-import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
+import {
+	IDataObject,
+	IExecuteFunctions,
+	INodeProperties,
+	sleep,
+} from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
+
+interface RequestOptions {
+	batching?: { batch?: { batchSize?: number; batchInterval?: number } };
+	timeout?: number;
+}
 
 export default {
 	name: '列出字段',
@@ -51,7 +61,18 @@ export default {
 			type: 'number',
 			default: 20,
 		},
-	],
+		{
+			displayName: 'Options',
+			name: 'options',
+			type: 'collection',
+			placeholder: 'Add option',
+			default: {},
+			options: [
+				{ displayName: 'Batching', name: 'batching', placeholder: 'Add Batching', type: 'fixedCollection', typeOptions: { multipleValues: false }, default: { batch: {} }, options: [{ displayName: 'Batching', name: 'batch', values: [{ displayName: 'Items per Batch', name: 'batchSize', type: 'number', typeOptions: { minValue: -1 }, default: 50, description: '输入将被分批处理以限制请求。 -1 表示禁用。0 将被视为 1。' }, { displayName: 'Batch Interval (Ms)', name: 'batchInterval', type: 'number', typeOptions: { minValue: 0 }, default: 1000, description: '每批请求之间的时间（毫秒）。0 表示禁用。' }] }] },
+				{ displayName: 'Timeout', name: 'timeout', type: 'number', typeOptions: { minValue: 0 }, default: 0, description: '等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。' },
+			],
+		},
+	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 		const app_token = this.getNodeParameter('app_toke', index) as string;
 		const table_id = this.getNodeParameter('table_id', index) as string;
@@ -60,6 +81,17 @@ export default {
 		const text_field_as_array = this.getNodeParameter('text_field_as_array', index) as boolean;
 		const page_token = this.getNodeParameter('page_toke', index) as string;
 		const page_size = this.getNodeParameter('page_size', index) as number;
+		const options = this.getNodeParameter('options', index, {}) as RequestOptions;
+
+		const handleBatchDelay = async (): Promise<void> => {
+			const batchSize = options.batching?.batch?.batchSize ?? -1;
+			const batchInterval = options.batching?.batch?.batchInterval ?? 0;
+			if (index > 0 && batchSize >= 0 && batchInterval > 0) {
+				const effectiveBatchSize = batchSize > 0 ? batchSize : 1;
+				if (index % effectiveBatchSize === 0) await sleep(batchInterval);
+			}
+		};
+		await handleBatchDelay();
 
 		const qs : any = {}
 		if (view_id) qs.view_id = view_id;
@@ -67,11 +99,9 @@ export default {
 		if (page_token) qs.page_token = page_token;
 		if (page_size) qs.page_size = page_size;
 
+		const requestOptions: any = { method: 'GET', url: `/open-apis/bitable/v1/apps/${app_token}/tables/${table_id}/fields`, qs };
+		if (options.timeout) requestOptions.timeout = options.timeout;
 
-		return RequestUtils.request.call(this, {
-			method: 'GET',
-			url: `/open-apis/bitable/v1/apps/${app_token}/tables/${table_id}/fields`,
-			qs
-		});
+		return RequestUtils.request.call(this, requestOptions);
 	},
 } as ResourceOperations;

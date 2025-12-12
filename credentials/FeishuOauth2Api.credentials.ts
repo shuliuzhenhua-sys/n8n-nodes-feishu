@@ -9,8 +9,7 @@ export class FeishuOauth2Api implements ICredentialType {
 
 	displayName = 'Feishu OAuth2 API';
 
-	// @ts-ignore
-	icon = 'file:icon.png';
+	icon = 'file:icon.svg' as const;
 	properties: INodeProperties[] = [
 		{
 			displayName: 'Grant Type',

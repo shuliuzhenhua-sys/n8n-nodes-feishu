@@ -10,8 +10,7 @@ import {
 export class FeishuCredentialsApi implements ICredentialType {
 	name = 'feishuCredentialsApi';
 	displayName = 'Feishu Credentials API';
-	// @ts-ignore
-	icon = 'file:icon.png';
+	icon = 'file:icon.svg' as const;
 	properties: INodeProperties[] = [
 		{
 			displayName: 'Base URL',
