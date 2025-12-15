@@ -15,7 +15,7 @@ const resourceBuilder = ResourceFactory.build(__dirname);
 export class FeishuNode implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: '飞书',
-		name: 'feishuNode',
+		name: 'feishuPowerByLukaCat',
 		subtitle: '={{ $parameter.resource }}:{{ $parameter.operation }}',
 		icon: 'file:icon.svg',
 		group: ['transform'],
