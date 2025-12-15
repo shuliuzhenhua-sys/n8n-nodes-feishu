@@ -1,6 +1,5 @@
-import { INodePropertyOptions } from 'n8n-workflow';
+import { INodePropertyOptions, INodeProperties } from 'n8n-workflow';
 import { IResource, ResourceOperations } from '../type/IResource';
-import { INodeProperties } from 'n8n-workflow';
 
 class ResourceBuilder {
 	resources: IResource[] = [];
@@ -21,7 +20,7 @@ class ResourceBuilder {
 
 	build(): INodeProperties[] {
 		// 构建 Operations
-		let list: INodeProperties[] = [];
+		const list: INodeProperties[] = [];
 
 		list.push({
 			displayName: 'Resource',
@@ -31,6 +30,8 @@ class ResourceBuilder {
 			options: this.resources.map((item) => {
 				return {
 					...item,
+					description: item.description || '',
+					action: item.action || '',
 					operations: null,
 				};
 			}),
@@ -52,6 +53,8 @@ class ResourceBuilder {
 				options: resource.operations.map((item) => {
 					return {
 						...item,
+						description: item.description || '',
+						action: item.action || item.name || '',
 						options: null,
 					};
 				}),
@@ -59,7 +62,7 @@ class ResourceBuilder {
 			});
 
 			for (const operation of resource.operations) {
-				for (let option of operation.options) {
+				for (const option of operation.options) {
 					// @ts-ignore
 					list.push({
 						...option,

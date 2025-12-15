@@ -56,7 +56,7 @@ class RequestUtils {
 						`Request Error: ${data.code}, ${data.msg} \n ` + JSON.stringify(data.error),
 					);
 				}
-				return data;
+				return data.data ?? data;
 			};
 
 			// 处理一次accesstoken过期的情况
