@@ -29,8 +29,7 @@ const MessageCardUpdateOperate: ResourceOperations = {
 			displayName: '卡片内容',
 			name: 'content',
 			type: 'json',
-			default:
-				'{"elements":[{"tag":"div","text":{"content":"This is the plain text","tag":"plain_text"}}],"header":{"template":"blue","title":{"content":"This is the title","tag":"plain_text"}}}',
+			default: JSON.stringify({ elements: [{ tag: 'div', text: { content: 'This is the plain text', tag: 'plain_text' } }], header: { template: 'blue', title: { content: 'This is the title', tag: 'plain_text' } } }, null, 2),
 			description:
 				'消息卡片的内容，支持卡片 JSON 或搭建工具构建的卡片，需为 JSON 结构序列化后的字符串。更新的卡片消息最大不能超过 30 KB。',
 			required: true,

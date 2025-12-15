@@ -31,17 +31,44 @@ const MessageEditOperate: ResourceOperations = {
 				{ name: '文本', value: 'text' },
 				{ name: '富文本', value: 'post' },
 			],
-			description: '消息类型。',
+			description: '消息类型（编辑消息仅支持文本和富文本）',
 			required: true,
 			default: 'text',
 		},
+		// 文本消息 - text
 		{
-			displayName: '消息内容',
-			name: 'content',
-			type: 'json',
-			default: '{"text":"edit content"}',
-			description: '消息内容，JSON 结构序列化后的字符串。',
+			displayName: '文本内容',
+			name: 'text_content',
+			type: 'string',
+			typeOptions: {
+				rows: 4,
+			},
 			required: true,
+			default: '',
+			description: '文本消息内容，支持 @用户 和 @所有人',
+			displayOptions: {
+				show: {
+					msg_type: ['text'],
+				},
+			},
+		},
+		// 富文本消息 - post
+		{
+			displayName: '富文本内容',
+			name: 'post_content',
+			type: 'json',
+			required: true,
+			default: JSON.stringify(
+				{ zh_cn: { title: '标题', content: [[{ tag: 'text', text: '文本内容' }]] } },
+				null,
+				2,
+			),
+			description: '富文本消息内容，JSON 格式',
+			displayOptions: {
+				show: {
+					msg_type: ['post'],
+				},
+			},
 		},
 		{
 			displayName: 'Options',
@@ -108,7 +135,6 @@ const MessageEditOperate: ResourceOperations = {
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 		const message_id = this.getNodeParameter('message_id', index) as string;
 		const msg_type = this.getNodeParameter('msg_type', index) as string;
-		const content = this.getNodeParameter('content', index) as string;
 		const options = this.getNodeParameter('options', index, {}) as RequestOptions;
 
 		// 处理批次延迟
@@ -125,6 +151,24 @@ const MessageEditOperate: ResourceOperations = {
 		};
 
 		await handleBatchDelay();
+
+		// 根据消息类型构建 content
+		let content: string;
+		switch (msg_type) {
+			case 'text': {
+				const text_content = this.getNodeParameter('text_content', index) as string;
+				content = JSON.stringify({ text: text_content });
+				break;
+			}
+			case 'post': {
+				const post_content = this.getNodeParameter('post_content', index);
+				content =
+					typeof post_content === 'string' ? post_content : JSON.stringify(post_content);
+				break;
+			}
+			default:
+				content = '{}';
+		}
 
 		const body: IDataObject = {
 			msg_type,
