@@ -71,7 +71,8 @@ jobs:
           echo ""
           echo "✅ 验证关键文件:"
           test -f dist/nodes/FeishuNode/FeishuNode.node.js && echo "✅ FeishuNode.node.js"
-          test -f dist/credentials/FeishuCredentialsApi.credentials.js && echo "✅ FeishuCredentialsApi.credentials.js"
+          test -f dist/credentials/FeishuNodeCredentialsApi.credentials.js && echo "✅ FeishuNodeCredentialsApi.credentials.js"
+          test -f dist/credentials/FeishuNodeOauth2Api.credentials.js && echo "✅ FeishuNodeOauth2Api.credentials.js"
           test -f dist/package.json && echo "✅ dist/package.json"
 
           echo ""

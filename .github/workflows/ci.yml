@@ -42,8 +42,12 @@ jobs:
             echo "❌ 构建失败：主要节点文件不存在"
             exit 1
           fi
-          if [ ! -f "dist/credentials/FeishuCredentialsApi.credentials.js" ]; then
-            echo "❌ 构建失败：凭据文件不存在"
+          if [ ! -f "dist/credentials/FeishuNodeCredentialsApi.credentials.js" ]; then
+            echo "❌ 构建失败：凭据文件 FeishuNodeCredentialsApi.credentials.js 不存在"
+            exit 1
+          fi
+          if [ ! -f "dist/credentials/FeishuNodeOauth2Api.credentials.js" ]; then
+            echo "❌ 构建失败：凭据文件 FeishuNodeOauth2Api.credentials.js 不存在"
             exit 1
           fi
           echo "✅ 构建成功，所有必要文件都已生成"
