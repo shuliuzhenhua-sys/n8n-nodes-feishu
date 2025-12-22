@@ -3,15 +3,9 @@ import {
 	IExecuteFunctions,
 	INodeProperties,
 	IHttpRequestMethods,
-	sleep,
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
-
-interface RequestOptions {
-	batching?: { batch?: { batchSize?: number; batchInterval?: number } };
-	timeout?: number;
-}
 
 const ChatAddMembersOperate: ResourceOperations = {
 	name: '将用户或机器人拉入群聊',
@@ -95,11 +89,11 @@ const ChatAddMembersOperate: ResourceOperations = {
 									name: 'batchSize',
 									type: 'number',
 									typeOptions: {
-										minValue: -1,
+										minValue: 1,
 									},
 									default: 50,
 									description:
-										'输入将被分批处理以限制请求。 -1 表示禁用。0 将被视为 1。',
+										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -134,7 +128,9 @@ const ChatAddMembersOperate: ResourceOperations = {
 		const id_list_str = this.getNodeParameter('id_list', index) as string;
 		const member_id_type = this.getNodeParameter('member_id_type', index, 'open_id') as string;
 		const succeed_type = this.getNodeParameter('succeed_type', index, 0) as number;
-		const options = this.getNodeParameter('options', index, {}) as RequestOptions;
+		const options = this.getNodeParameter('options', index, {}) as {
+		timeout?: number;
+	};
 
 		// 解析成员 ID 列表（支持逗号分隔）
 		const id_list = id_list_str
@@ -150,24 +146,8 @@ const ChatAddMembersOperate: ResourceOperations = {
 		const body: IDataObject = {
 			id_list,
 		};
-
-		// 处理批次延迟
-		const handleBatchDelay = async (): Promise<void> => {
-			const batchSize = options.batching?.batch?.batchSize ?? -1;
-			const batchInterval = options.batching?.batch?.batchInterval ?? 0;
-
-			if (index > 0 && batchSize >= 0 && batchInterval > 0) {
-				const effectiveBatchSize = batchSize > 0 ? batchSize : 1;
-				if (index % effectiveBatchSize === 0) {
-					await sleep(batchInterval);
-				}
-			}
-		};
-
-		await handleBatchDelay();
-
 		// 构建请求选项
-		const requestOptions: any = {
+		const requestOptions: IDataObject = {
 			method: 'POST' as IHttpRequestMethods,
 			url: `/open-apis/im/v1/chats/${chat_id}/members`,
 			qs,

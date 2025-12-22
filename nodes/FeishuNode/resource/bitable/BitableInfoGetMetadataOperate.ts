@@ -2,15 +2,9 @@ import {
 	IDataObject,
 	IExecuteFunctions,
 	INodeProperties,
-	sleep,
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
-
-interface RequestOptions {
-	batching?: { batch?: { batchSize?: number; batchInterval?: number } };
-	timeout?: number;
-}
 
 const BitableInfoGetMetadataOperate: ResourceOperations = {
 	name: '获取多维表格元数据',
@@ -53,11 +47,11 @@ const BitableInfoGetMetadataOperate: ResourceOperations = {
 									name: 'batchSize',
 									type: 'number',
 									typeOptions: {
-										minValue: -1,
+										minValue: 1,
 									},
 									default: 50,
 									description:
-										'输入将被分批处理以限制请求。 -1 表示禁用。0 将被视为 1。',
+										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -89,25 +83,11 @@ const BitableInfoGetMetadataOperate: ResourceOperations = {
 	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 		const app_token = this.getNodeParameter('app_toke', index) as string;
-		const options = this.getNodeParameter('options', index, {}) as RequestOptions;
-
-		// 处理批次延迟
-		const handleBatchDelay = async (): Promise<void> => {
-			const batchSize = options.batching?.batch?.batchSize ?? -1;
-			const batchInterval = options.batching?.batch?.batchInterval ?? 0;
-
-			if (index > 0 && batchSize >= 0 && batchInterval > 0) {
-				const effectiveBatchSize = batchSize > 0 ? batchSize : 1;
-				if (index % effectiveBatchSize === 0) {
-					await sleep(batchInterval);
-				}
-			}
-		};
-
-		await handleBatchDelay();
-
+		const options = this.getNodeParameter('options', index, {}) as {
+		timeout?: number;
+	};
 		// 构建请求选项
-		const requestOptions: any = {
+		const requestOptions: IDataObject = {
 			method: 'GET',
 			url: `/open-apis/bitable/v1/apps/${app_token}`,
 		};

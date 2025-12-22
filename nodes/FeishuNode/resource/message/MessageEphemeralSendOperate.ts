@@ -2,15 +2,9 @@ import {
 	IDataObject,
 	IExecuteFunctions,
 	INodeProperties,
-	sleep,
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
-
-interface RequestOptions {
-	batching?: { batch?: { batchSize?: number; batchInterval?: number } };
-	timeout?: number;
-}
 
 const MessageEphemeralSendOperate: ResourceOperations = {
 	name: '发送仅特定人可见的消息卡片',
@@ -99,11 +93,11 @@ const MessageEphemeralSendOperate: ResourceOperations = {
 									name: 'batchSize',
 									type: 'number',
 									typeOptions: {
-										minValue: -1,
+										minValue: 1,
 									},
 									default: 50,
 									description:
-										'输入将被分批处理以限制请求。 -1 表示禁用。0 将被视为 1。',
+										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -138,23 +132,9 @@ const MessageEphemeralSendOperate: ResourceOperations = {
 		const user_id_type = this.getNodeParameter('user_id_type', index) as string;
 		const user_id_value = this.getNodeParameter('user_id_value', index) as string;
 		const card = this.getNodeParameter('card', index) as object;
-		const options = this.getNodeParameter('options', index, {}) as RequestOptions;
-
-		// 处理批次延迟
-		const handleBatchDelay = async (): Promise<void> => {
-			const batchSize = options.batching?.batch?.batchSize ?? -1;
-			const batchInterval = options.batching?.batch?.batchInterval ?? 0;
-
-			if (index > 0 && batchSize >= 0 && batchInterval > 0) {
-				const effectiveBatchSize = batchSize > 0 ? batchSize : 1;
-				if (index % effectiveBatchSize === 0) {
-					await sleep(batchInterval);
-				}
-			}
-		};
-
-		await handleBatchDelay();
-
+		const options = this.getNodeParameter('options', index, {}) as {
+		timeout?: number;
+	};
 		const body: IDataObject = {
 			chat_id,
 			msg_type: 'interactive',
@@ -165,7 +145,7 @@ const MessageEphemeralSendOperate: ResourceOperations = {
 		body[user_id_type] = user_id_value;
 
 		// 构建请求选项
-		const requestOptions: any = {
+		const requestOptions: IDataObject = {
 			method: 'POST',
 			url: `/open-apis/ephemeral/v1/send`,
 			body,

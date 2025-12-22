@@ -2,15 +2,9 @@ import {
 	IDataObject,
 	IExecuteFunctions,
 	INodeProperties,
-	sleep,
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
-
-interface RequestOptions {
-	batching?: { batch?: { batchSize?: number; batchInterval?: number } };
-	timeout?: number;
-}
 
 const MessageCardDelayUpdateOperate: ResourceOperations = {
 	name: '延时更新消息卡片',
@@ -72,11 +66,11 @@ const MessageCardDelayUpdateOperate: ResourceOperations = {
 									name: 'batchSize',
 									type: 'number',
 									typeOptions: {
-										minValue: -1,
+										minValue: 1,
 									},
 									default: 50,
 									description:
-										'输入将被分批处理以限制请求。 -1 表示禁用。0 将被视为 1。',
+										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -110,23 +104,9 @@ const MessageCardDelayUpdateOperate: ResourceOperations = {
 		const token = this.getNodeParameter('token', index) as string;
 		const card = this.getNodeParameter('card', index) as string | object;
 		const open_ids_str = this.getNodeParameter('open_ids', index) as string;
-		const options = this.getNodeParameter('options', index, {}) as RequestOptions;
-
-		// 处理批次延迟
-		const handleBatchDelay = async (): Promise<void> => {
-			const batchSize = options.batching?.batch?.batchSize ?? -1;
-			const batchInterval = options.batching?.batch?.batchInterval ?? 0;
-
-			if (index > 0 && batchSize >= 0 && batchInterval > 0) {
-				const effectiveBatchSize = batchSize > 0 ? batchSize : 1;
-				if (index % effectiveBatchSize === 0) {
-					await sleep(batchInterval);
-				}
-			}
-		};
-
-		await handleBatchDelay();
-
+		const options = this.getNodeParameter('options', index, {}) as {
+		timeout?: number;
+	};
 		// 解析 card 参数
 		let cardObj: IDataObject;
 		if (typeof card === 'string') {
@@ -156,7 +136,7 @@ const MessageCardDelayUpdateOperate: ResourceOperations = {
 		};
 
 		// 构建请求选项
-		const requestOptions: any = {
+		const requestOptions: IDataObject = {
 			method: 'POST',
 			url: '/open-apis/interactive/v1/card/update',
 			body,

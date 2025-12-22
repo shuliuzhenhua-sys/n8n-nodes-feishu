@@ -18,8 +18,6 @@ class RequestUtils {
 		if (authentication === Credentials.FeishuCredentialsApi) {
 			const credentials = await this.getCredentials(authentication);
 
-			console.log('credentials.accessToken', credentials.accessToken);
-
 			options.baseURL = `https://${credentials.baseUrl}`;
 
 			additionalCredentialOptions = {

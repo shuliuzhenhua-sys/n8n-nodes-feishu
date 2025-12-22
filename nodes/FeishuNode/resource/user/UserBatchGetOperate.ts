@@ -2,15 +2,9 @@ import {
 	IDataObject,
 	IExecuteFunctions,
 	INodeProperties,
-	sleep,
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
-
-interface RequestOptions {
-	batching?: { batch?: { batchSize?: number; batchInterval?: number } };
-	timeout?: number;
-}
 
 const UserBatchGetOperate: ResourceOperations = {
 	name: '批量获取用户信息',
@@ -95,11 +89,11 @@ const UserBatchGetOperate: ResourceOperations = {
 									name: 'batchSize',
 									type: 'number',
 									typeOptions: {
-										minValue: -1,
+										minValue: 1,
 									},
 									default: 50,
 									description:
-										'输入将被分批处理以限制请求。 -1 表示禁用。0 将被视为 1。',
+										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -133,7 +127,9 @@ const UserBatchGetOperate: ResourceOperations = {
 		const user_ids_input = this.getNodeParameter('user_ids', index);
 		const user_id_type = this.getNodeParameter('user_id_type', index) as string;
 		const department_id_type = this.getNodeParameter('department_id_type', index) as string;
-		const options = this.getNodeParameter('options', index, {}) as RequestOptions;
+		const options = this.getNodeParameter('options', index, {}) as {
+		timeout?: number;
+	};
 
 		// 解析用户ID列表，支持 JSON 数组和逗号分隔字符串两种格式
 		let user_ids: string[];
@@ -168,21 +164,6 @@ const UserBatchGetOperate: ResourceOperations = {
 			throw new Error('单次请求最多50个用户ID');
 		}
 
-		// 处理批次延迟
-		const handleBatchDelay = async (): Promise<void> => {
-			const batchSize = options.batching?.batch?.batchSize ?? -1;
-			const batchInterval = options.batching?.batch?.batchInterval ?? 0;
-
-			if (index > 0 && batchSize >= 0 && batchInterval > 0) {
-				const effectiveBatchSize = batchSize > 0 ? batchSize : 1;
-				if (index % effectiveBatchSize === 0) {
-					await sleep(batchInterval);
-				}
-			}
-		};
-
-		await handleBatchDelay();
-
 		// 构建查询参数，user_ids 需要多次传递
 		const qs: IDataObject = {
 			user_id_type,
@@ -190,7 +171,7 @@ const UserBatchGetOperate: ResourceOperations = {
 		};
 
 		// 构建请求选项
-		const requestOptions: any = {
+		const requestOptions: IDataObject = {
 			method: 'GET',
 			url: '/open-apis/contact/v3/users/batch',
 			qs,
@@ -200,7 +181,7 @@ const UserBatchGetOperate: ResourceOperations = {
 		};
 
 		// 添加 user_ids 数组参数
-		requestOptions.qs.user_ids = user_ids;
+		(requestOptions.qs as IDataObject).user_ids = user_ids;
 
 		// 添加超时配置
 		if (options.timeout) {

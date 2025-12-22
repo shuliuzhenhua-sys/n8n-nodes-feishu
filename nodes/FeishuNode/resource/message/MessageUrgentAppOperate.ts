@@ -2,15 +2,9 @@ import {
 	IDataObject,
 	IExecuteFunctions,
 	INodeProperties,
-	sleep,
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
-
-interface RequestOptions {
-	batching?: { batch?: { batchSize?: number; batchInterval?: number } };
-	timeout?: number;
-}
 
 const MessageUrgentAppOperate: ResourceOperations = {
 	name: '发送应用内加急',
@@ -81,11 +75,11 @@ const MessageUrgentAppOperate: ResourceOperations = {
 									name: 'batchSize',
 									type: 'number',
 									typeOptions: {
-										minValue: -1,
+										minValue: 1,
 									},
 									default: 50,
 									description:
-										'输入将被分批处理以限制请求。 -1 表示禁用。0 将被视为 1。',
+										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -119,23 +113,9 @@ const MessageUrgentAppOperate: ResourceOperations = {
 		const message_id = this.getNodeParameter('message_id', index) as string;
 		const user_id_type = this.getNodeParameter('user_id_type', index) as string;
 		const user_id_list_str = this.getNodeParameter('user_id_list', index) as string;
-		const options = this.getNodeParameter('options', index, {}) as RequestOptions;
-
-		// 处理批次延迟
-		const handleBatchDelay = async (): Promise<void> => {
-			const batchSize = options.batching?.batch?.batchSize ?? -1;
-			const batchInterval = options.batching?.batch?.batchInterval ?? 0;
-
-			if (index > 0 && batchSize >= 0 && batchInterval > 0) {
-				const effectiveBatchSize = batchSize > 0 ? batchSize : 1;
-				if (index % effectiveBatchSize === 0) {
-					await sleep(batchInterval);
-				}
-			}
-		};
-
-		await handleBatchDelay();
-
+		const options = this.getNodeParameter('options', index, {}) as {
+		timeout?: number;
+	};
 		// 解析用户 ID 列表
 		const user_id_list = user_id_list_str
 			.split(',')
@@ -147,7 +127,7 @@ const MessageUrgentAppOperate: ResourceOperations = {
 		};
 
 		// 构建请求选项
-		const requestOptions: any = {
+		const requestOptions: IDataObject = {
 			method: 'PATCH',
 			url: `/open-apis/im/v1/messages/${message_id}/urgent_app`,
 			qs: {
