@@ -20,19 +20,20 @@ const WikiSpacesNodeCreateOperate: ResourceOperations = {
 			type: 'options',
 			// eslint-disable-next-line n8n-nodes-base/node-param-options-type-unsorted-items
 			options: [
-				{ name: '文档', value: 'docx' },
+				{ name: '新版文档', value: 'docx' },
 				{ name: '表格', value: 'sheet' },
 				{ name: '思维导图', value: 'mindnote' },
 				{ name: '多维表格', value: 'bitable' },
 				{ name: '文件', value: 'file' },
+				{ name: '幻灯片', value: 'slides' },
 			],
 			default: 'docx',
 		},
 		{
 			displayName: '父节点Token',
 			name: 'parent_node_token',
+			// eslint-disable-next-line n8n-nodes-base/node-param-type-options-password-missing
 			type: 'string',
-			typeOptions: { password: true },
 			default: '',
 			description: '父节点token，一级节点为空',
 		},
@@ -50,9 +51,15 @@ const WikiSpacesNodeCreateOperate: ResourceOperations = {
 		{
 			displayName: '原始节点Token',
 			name: 'origin_node_token',
+			// eslint-disable-next-line n8n-nodes-base/node-param-type-options-password-missing
 			type: 'string',
-			typeOptions: { password: true },
+			required: true,
 			default: '',
+			displayOptions: {
+				show: {
+					node_type: ['shortcut'],
+				},
+			},
 			description: '快捷方式对应的实体node_token',
 		},
 		{

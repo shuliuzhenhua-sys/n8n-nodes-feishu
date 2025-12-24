@@ -10,8 +10,8 @@ const WikiSpacesNodeGetInfoOperate: ResourceOperations = {
 		{
 			displayName: '节点Token',
 			name: 'token',
+			// eslint-disable-next-line n8n-nodes-base/node-param-type-options-password-missing
 			type: 'string',
-			typeOptions: { password: true },
 			required: true,
 			default: '',
 			description: '知识库节点或对应云文档的实际token',
