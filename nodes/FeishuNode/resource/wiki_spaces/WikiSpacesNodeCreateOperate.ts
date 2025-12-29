@@ -74,9 +74,9 @@ const WikiSpacesNodeCreateOperate: ResourceOperations = {
 		const spaceId = this.getNodeParameter('space_id', index) as string;
 		const objType = this.getNodeParameter('obj_type', index) as string;
 		const nodeType = this.getNodeParameter('node_type', index) as string;
-		const parentNodeToken = this.getNodeParameter('parent_node_token', index) as string;
-		const originNodeToken = this.getNodeParameter('origin_node_token', index) as string;
-		const title = this.getNodeParameter('title', index) as string;
+		const parentNodeToken = this.getNodeParameter('parent_node_token', index, '') as string;
+		const originNodeToken = this.getNodeParameter('origin_node_token', index, '') as string;
+		const title = this.getNodeParameter('title', index, '') as string;
 		const options = this.getNodeParameter('options', index, {}) as {
 		timeout?: number;
 	};
