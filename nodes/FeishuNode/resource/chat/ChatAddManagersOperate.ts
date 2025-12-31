@@ -25,7 +25,7 @@ const ChatAddManagersOperate: ResourceOperations = {
 			type: 'string',
 			required: true,
 			default: '',
-			description: '要设置为管理员的 ID 列表，多个 ID 用英文逗号分隔。ID 类型与查询参数 member_id_type 取值一致。如果是用户（member_id_type 为 user_id/open_id/union_id），推荐使用用户的 open_id；如果是机器人（member_id_type 为 app_id），请使用应用的 App ID。普通群最多可指定 10 个管理员；超大群最多可指定 20 个管理员；单次请求指定机器人时，最多可指定 5 个机器人。',
+			description: '要设置为管理员的 ID 列表，支持逗号分隔的字符串或通过表达式传入数组。ID 类型与查询参数 member_id_type 取值一致。如果是用户（member_id_type 为 user_id/open_id/union_id），推荐使用用户的 open_id；如果是机器人（member_id_type 为 app_id），请使用应用的 App ID。普通群最多可指定 10 个管理员；超大群最多可指定 20 个管理员；单次请求指定机器人时，最多可指定 5 个机器人。',
 		},
 		{
 			displayName: '成员 ID 类型',
@@ -104,17 +104,22 @@ const ChatAddManagersOperate: ResourceOperations = {
 	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 		const chat_id = this.getNodeParameter('chat_id', index) as string;
-		const manager_ids_str = this.getNodeParameter('manager_ids', index) as string;
+		const manager_ids_raw = this.getNodeParameter('manager_ids', index) as string | string[];
 		const member_id_type = this.getNodeParameter('member_id_type', index, 'open_id') as string;
 		const options = this.getNodeParameter('options', index, {}) as {
 		timeout?: number;
 	};
 
-		// 解析管理员 ID 列表（支持逗号分隔）
-		const manager_ids = manager_ids_str
-			.split(',')
-			.map((id) => id.trim())
-			.filter((id) => id.length > 0);
+		// 解析管理员 ID 列表（支持字符串或数组）
+		let manager_ids: string[];
+		if (Array.isArray(manager_ids_raw)) {
+			manager_ids = manager_ids_raw.map((id) => String(id).trim()).filter((id) => id.length > 0);
+		} else {
+			manager_ids = manager_ids_raw
+				.split(',')
+				.map((id) => id.trim())
+				.filter((id) => id.length > 0);
+		}
 
 		const qs: IDataObject = {
 			member_id_type,

@@ -38,7 +38,7 @@ const ChatRemoveMembersOperate: ResourceOperations = {
 			type: 'string',
 			required: true,
 			default: '',
-			description: '成员 ID 列表，多个 ID 用逗号分隔。ID 类型与查询参数 member_id_type 的取值一致。移除群内的用户时推荐使用 OpenID；移除群内的机器人时需填写应用的 App ID。注意：成员列表不可为空，每次请求最多移除 50 个用户或者 5 个机器人。',
+			description: '成员 ID 列表，支持逗号分隔的字符串或通过表达式传入数组。ID 类型与查询参数 member_id_type 的取值一致。移除群内的用户时推荐使用 OpenID；移除群内的机器人时需填写应用的 App ID。注意：成员列表不可为空，每次请求最多移除 50 个用户或者 5 个机器人。',
 		},
 		{
 			displayName: 'Options',
@@ -105,16 +105,21 @@ const ChatRemoveMembersOperate: ResourceOperations = {
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 		const chat_id = this.getNodeParameter('chat_id', index) as string;
 		const member_id_type = this.getNodeParameter('member_id_type', index, 'open_id') as string;
-		const id_list_str = this.getNodeParameter('id_list', index) as string;
+		const id_list_raw = this.getNodeParameter('id_list', index) as string | string[];
 		const options = this.getNodeParameter('options', index, {}) as {
 		timeout?: number;
 	};
 
-		// 解析成员 ID 列表
-		const id_list = id_list_str
-			.split(',')
-			.map((id) => id.trim())
-			.filter((id) => id.length > 0);
+		// 解析成员 ID 列表（支持字符串或数组）
+		let id_list: string[];
+		if (Array.isArray(id_list_raw)) {
+			id_list = id_list_raw.map((id) => String(id).trim()).filter((id) => id.length > 0);
+		} else {
+			id_list = id_list_raw
+				.split(',')
+				.map((id) => id.trim())
+				.filter((id) => id.length > 0);
+		}
 
 		const qs: IDataObject = {
 			member_id_type,

@@ -25,7 +25,7 @@ const ChatAddMembersOperate: ResourceOperations = {
 			type: 'string',
 			required: true,
 			default: '',
-			description: '成员 ID 列表，多个 ID 用英文逗号分隔。邀请用户进群时推荐使用 OpenID；邀请机器人进群时需填写应用的 App ID。每次请求最多拉 50 个用户且不超过群人数上限。最多同时邀请 5 个机器人，且邀请后群组中机器人数量不能超过 15 个。',
+			description: '成员 ID 列表，支持逗号分隔的字符串或通过表达式传入数组。邀请用户进群时推荐使用 OpenID；邀请机器人进群时需填写应用的 App ID。每次请求最多拉 50 个用户且不超过群人数上限。最多同时邀请 5 个机器人，且邀请后群组中机器人数量不能超过 15 个。',
 		},
 		{
 			displayName: '成员 ID 类型',
@@ -125,18 +125,23 @@ const ChatAddMembersOperate: ResourceOperations = {
 	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 		const chat_id = this.getNodeParameter('chat_id', index) as string;
-		const id_list_str = this.getNodeParameter('id_list', index) as string;
+		const id_list_raw = this.getNodeParameter('id_list', index) as string | string[];
 		const member_id_type = this.getNodeParameter('member_id_type', index, 'open_id') as string;
 		const succeed_type = this.getNodeParameter('succeed_type', index, 0) as number;
 		const options = this.getNodeParameter('options', index, {}) as {
 		timeout?: number;
 	};
 
-		// 解析成员 ID 列表（支持逗号分隔）
-		const id_list = id_list_str
-			.split(',')
-			.map((id) => id.trim())
-			.filter((id) => id.length > 0);
+		// 解析成员 ID 列表（支持字符串或数组）
+		let id_list: string[];
+		if (Array.isArray(id_list_raw)) {
+			id_list = id_list_raw.map((id) => String(id).trim()).filter((id) => id.length > 0);
+		} else {
+			id_list = id_list_raw
+				.split(',')
+				.map((id) => id.trim())
+				.filter((id) => id.length > 0);
+		}
 
 		const qs: IDataObject = {
 			member_id_type,
