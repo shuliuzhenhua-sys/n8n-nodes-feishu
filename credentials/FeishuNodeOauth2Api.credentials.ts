@@ -47,13 +47,6 @@ export class FeishuNodeOauth2Api implements ICredentialType {
 			default: '',
 		},
 		{
-			displayName: 'OAuth Redirect URL',
-			name: 'redirectUri',
-			type: 'string',
-			default: '',
-			description: '留空则使用 n8n 默认回调地址',
-		},
-		{
 			displayName: 'Authentication',
 			name: 'authentication',
 			type: 'hidden',
