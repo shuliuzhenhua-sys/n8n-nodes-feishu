@@ -1,15 +1,15 @@
-# @luka-cat-mimi/n8n-nodes-feishu
+# @shuliuzhenhua/n8n-nodes-feishu
 
 飞书 n8n 社区节点，提供飞书开放平台 API 的集成支持。
 
 > 本项目是基于 [n8n-nodes-feishu-lite](https://github.com/other-blowsnow/n8n-nodes-feishu-lite) 之上进行的二次开发，感谢原作者的开源贡献！
->   "name": "@luka-cat-mimi/n8n-nodes-feishu",在此基础上添加修改 默认回调地址的功能。因为我在服务器授权的时候说我的地址不安全。
+>   "name": "@luka-cat-mimi/n8n-nodes-feishu",在此基础上添加修改 添加从云空间下载文件功能
 
 ## 安装
 
 参考：https://docs.n8n.io/integrations/community-nodes/installation/
 
-节点名称：`@luka-cat-mimi/n8n-nodes-feishu`
+节点名称：`@shuliuzhenhua/n8n-nodes-feishu`
 
 
 ## 功能列表
