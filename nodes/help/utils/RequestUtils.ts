@@ -10,7 +10,7 @@ class RequestUtils {
 		this: IExecuteFunctions,
 		options: IRequestOptions,
 		clearAccessToken = false,
-	) {
+	): Promise<any> {
 		let authentication = this.getNodeParameter('authentication', 0) as string;
 
 		let additionalCredentialOptions = {} as IAdditionalCredentialOptions
@@ -46,7 +46,11 @@ class RequestUtils {
 			.call(this, authentication, options, additionalCredentialOptions)
 	}
 
-	static async request(this: IExecuteFunctions, options: IRequestOptions, retryOnAuthError = true) {
+	static async request(
+		this: IExecuteFunctions,
+		options: IRequestOptions,
+		retryOnAuthError = true,
+	): Promise<any> {
 		if (options.json === undefined) options.json = true;
 
 		return RequestUtils.originRequest.call(this, options).then((data) => {
