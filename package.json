@@ -29,7 +29,8 @@
   "main": "index.js",
   "scripts": {
     "build": "npx rimraf dist && tsc && gulp build:icons",
-    "dev": "tsc --watch",
+    "build:watch": "tsc --watch",
+    "dev": "N8N_CUSTOM_EXTENSIONS=$(pwd) n8n-node dev",
     "format": "prettier credentials nodes --write",
     "lint": "eslint \"credentials/**/*.ts\" \"nodes/**/*.ts\" package.json",
     "lintfix": "eslint \"credentials/**/*.ts\" \"nodes/**/*.ts\" package.json --fix",
