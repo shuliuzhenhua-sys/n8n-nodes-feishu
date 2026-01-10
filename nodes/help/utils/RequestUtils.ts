@@ -34,7 +34,8 @@ class RequestUtils {
 			options.baseURL = `https://open.feishu.cn`;
 
 			let oauth2 = {
-				keepBearer: true
+				keepBearer: true,
+				includeCredentialsOnRefreshOnBody: true,
 			} as IOAuth2Options
 
 			return this.helpers.requestOAuth2
@@ -45,7 +46,7 @@ class RequestUtils {
 			.call(this, authentication, options, additionalCredentialOptions)
 	}
 
-	static async request(this: IExecuteFunctions, options: IRequestOptions) {
+	static async request(this: IExecuteFunctions, options: IRequestOptions, retryOnAuthError = true) {
 		if (options.json === undefined) options.json = true;
 
 		return RequestUtils.originRequest.call(this, options).then((data) => {
@@ -58,11 +59,23 @@ class RequestUtils {
 				return data.data ?? data;
 			};
 
+			const authentication = this.getNodeParameter('authentication', 0) as string;
+
 			// 处理一次accesstoken过期的情况
 			if (data.code && data.code === 99991663) {
-				return RequestUtils.originRequest.call(this, options, true).then((data) => {
-					return handleResponse(data);
-				});
+				if (authentication === Credentials.FeishuOauth2Api && retryOnAuthError) {
+					return this.helpers
+						.refreshOAuth2Token.call(this, authentication, {
+							includeCredentialsOnRefreshOnBody: true,
+						})
+						.then(() => RequestUtils.request.call(this, options, false));
+				}
+
+				if (authentication === Credentials.FeishuCredentialsApi) {
+					return RequestUtils.originRequest.call(this, options, true).then((data) => {
+						return handleResponse(data);
+					});
+				}
 			}
 
 			return handleResponse(data);
