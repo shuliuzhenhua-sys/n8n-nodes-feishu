@@ -12,6 +12,9 @@ const SpaceFileDownloadOperate: ResourceOperations = {
 			name: 'file_token',
 			type: 'string',
 			required: true,
+			typeOptions: {
+				password: true,
+			},
 			default: '',
 			description: '素材的唯一标识 Token，通过文件列表等接口获取',
 		},

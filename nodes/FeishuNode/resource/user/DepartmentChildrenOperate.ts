@@ -55,7 +55,7 @@ const DepartmentChildrenOperate: ResourceOperations = {
 			name: 'fetch_child',
 			type: 'boolean',
 			default: false,
-			description: '是否递归获取当前部门下所有层级的子部门信息',
+			description: 'Whether to recursively fetch all child departments under the current department',
 		},
 		{
 			displayName: 'Return All',
@@ -68,7 +68,7 @@ const DepartmentChildrenOperate: ResourceOperations = {
 			displayName: 'Limit',
 			name: 'limit',
 			type: 'number',
-			default: 100,
+			default: 50,
 			typeOptions: {
 				minValue: 1,
 				maxValue: 100,
@@ -87,7 +87,7 @@ const DepartmentChildrenOperate: ResourceOperations = {
 		const user_id_type = this.getNodeParameter('user_id_type', index, 'open_id') as string;
 		const fetch_child = this.getNodeParameter('fetch_child', index, false) as boolean;
 		const returnAll = this.getNodeParameter('returnAll', index, false) as boolean;
-		const limit = this.getNodeParameter('limit', index, 100) as number;
+		const limit = this.getNodeParameter('limit', index, 50) as number;
 
 		if (department_id === '0' && department_id_type === 'open_department_id') {
 			department_id_type = 'department_id';
