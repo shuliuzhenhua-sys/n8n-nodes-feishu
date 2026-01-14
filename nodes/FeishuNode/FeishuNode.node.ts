@@ -280,6 +280,17 @@ export class FeishuNode implements INodeType {
 				},
 			},
 		],
+		webhooks: [
+			{
+				name: 'default',
+				httpMethod: 'POST',
+				responseMode: 'onReceived',
+				responseData: '',
+				path: '={{ $nodeId }}',
+				restartWebhook: true,
+				isFullPath: true,
+			},
+		],
 		properties: [
 			{
 				displayName: '凭证类型',

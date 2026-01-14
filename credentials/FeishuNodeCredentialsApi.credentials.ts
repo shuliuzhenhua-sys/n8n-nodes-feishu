@@ -6,6 +6,7 @@ import {
 	IHttpRequestHelper,
 	INodeProperties,
 } from 'n8n-workflow';
+import { BaseUrl } from '../nodes/help/type/enums';
 
 export class FeishuNodeCredentialsApi implements ICredentialType {
 	name = 'feishuNodeCredentialsApi';
@@ -14,10 +15,46 @@ export class FeishuNodeCredentialsApi implements ICredentialType {
 	properties: INodeProperties[] = [
 		{
 			displayName: 'Base URL',
-			name: 'baseUrl',
-			type: 'string',
-			default: 'open.feishu.cn',
+			name: 'url',
+			type: 'options',
+			options: [
+				{
+					name: `${BaseUrl.China}`,
+					value: `${BaseUrl.China}`,
+					description: '飞书开放平台 API 地址（中国）',
+				},
+				{
+					name: `${BaseUrl.Global}`,
+					value: `${BaseUrl.Global}`,
+					description: 'Larksuite 开放平台 API 地址（海外）',
+				},
+				{
+					name: '自定义',
+					value: 'custom',
+					description: '自定义 URL',
+				},
+			],
+			default: BaseUrl.China,
 			required: true,
+		},
+		{
+			displayName: '自定义 URL',
+			name: 'customUrl',
+			type: 'string',
+			default: '',
+			placeholder: 'https://custom.domain',
+			hint: '必须以 "https://" 或 "http://" 开头',
+			displayOptions: {
+				show: {
+					url: ['custom'],
+				},
+			},
+		},
+		{
+			displayName: 'URL',
+			name: 'baseURL',
+			type: 'hidden',
+			default: '={{$self["url"] === "custom" ? $self["customUrl"] : $self["url"]}}',
 		},
 		{
 			displayName: 'Appid',
@@ -48,9 +85,11 @@ export class FeishuNodeCredentialsApi implements ICredentialType {
 	];
 
 	async preAuthentication(this: IHttpRequestHelper, credentials: ICredentialDataDecryptedObject) {
+
 		const res = (await this.helpers.httpRequest({
 			method: 'POST',
-			url: `https://${credentials.baseUrl}/open-apis/auth/v3/app_access_token/internal`,
+			baseURL: credentials.baseURL as string,
+			url: '/open-apis/auth/v3/app_access_token/internal',
 			body: {
 				app_id: credentials.appid,
 				app_secret: credentials.appsecret,
@@ -66,26 +105,6 @@ export class FeishuNodeCredentialsApi implements ICredentialType {
 		return { accessToken: res.tenant_access_token };
 	}
 
-	// async authenticate(
-	// 	credentials: ICredentialDataDecryptedObject,
-	// 	requestOptions: IHttpRequestOptions,
-	// ): Promise<IHttpRequestOptions> {
-	// 	requestOptions.baseURL = `https://${credentials.baseUrl}`;
-	// 	requestOptions.headers = {
-	// 		...(requestOptions.headers || {}),
-	// 		Authorization: 'Bearer ' + credentials.accessToken,
-	// 	};
-	// 	// console.log('authenticate requestOptions:', requestOptions);
-	// 	// requestOptions.proxy = {
-	// 	// 	host: '127.0.0.1',
-	// 	// 	port: 8000,
-	// 	// 	protocol: 'http',
-	// 	// };
-	// 	// requestOptions.skipSslCertificateValidation = true;
-	//
-	// 	return requestOptions;
-	// }
-
 	authenticate: IAuthenticateGeneric = {
 		type: 'generic',
 		properties: {
@@ -98,8 +117,8 @@ export class FeishuNodeCredentialsApi implements ICredentialType {
 	// The block below tells how this credential can be tested
 	test: ICredentialTestRequest = {
 		request: {
-			baseURL: '=https://{{$credentials.baseUrl}}',
-			url: `/open-apis/auth/v3/app_access_token/internal`,
+			baseURL: '={{$credentials.baseURL}}',
+			url: '/open-apis/auth/v3/app_access_token/internal',
 			method: 'POST',
 			body: {
 				app_id: '={{$credentials.appid}}',
@@ -108,10 +127,19 @@ export class FeishuNodeCredentialsApi implements ICredentialType {
 		},
 		rules: [
 			{
-				type: 'responseCode',
+				type: 'responseSuccessBody',
 				properties: {
-					value: 200,
-					message: '授权验证失败',
+					message: '参数错误',
+					key: 'code',
+					value: 10003,
+				},
+			},
+			{
+				type: 'responseSuccessBody',
+				properties: {
+					message: 'App Secret 无效',
+					key: 'code',
+					value: 10014,
 				},
 			},
 		],

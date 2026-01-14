@@ -18,7 +18,7 @@ class RequestUtils {
 		if (authentication === Credentials.FeishuCredentialsApi) {
 			const credentials = await this.getCredentials(authentication);
 
-			options.baseURL = `https://${credentials.baseUrl}`;
+			options.baseURL = credentials.baseURL as string;
 
 			additionalCredentialOptions = {
 				// @ts-ignore
@@ -30,9 +30,8 @@ class RequestUtils {
 				},
 			};
 		} else if (authentication === Credentials.FeishuOauth2Api) {
-
-			options.baseURL = `https://open.feishu.cn`;
-
+			const credentials = await this.getCredentials(authentication);
+			options.baseURL = credentials.baseURL as string;
 			let oauth2 = {
 				keepBearer: true
 			} as IOAuth2Options
