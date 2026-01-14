@@ -363,15 +363,16 @@ export class WSClient {
 			}
 		} catch (error) {
 			respPayload.code = HttpStatusCode.internal_server_error;
+			const errorMessage = error instanceof Error ? error.message : String(error);
 			this.logger.error(
-				`[ws] invoke event failed, message_type: ${type}; message_id: ${message_id}; trace_id: ${trace_id}; error: ${error}`,
+				`[ws] invoke event failed, message_type: ${type}; message_id: ${message_id}; trace_id: ${trace_id}; error: ${errorMessage}`,
 			);
 		}
 		const endTime = Date.now();
 
 		this.sendMessage({
 			...data,
-			headers: [...data.headers, { key: HeaderKey.biz_rt, value: String(startTime - endTime) }],
+			headers: [...data.headers, { key: HeaderKey.biz_rt, value: String(endTime - startTime) }],
 			payload: new TextEncoder().encode(JSON.stringify(respPayload)),
 		});
 	}

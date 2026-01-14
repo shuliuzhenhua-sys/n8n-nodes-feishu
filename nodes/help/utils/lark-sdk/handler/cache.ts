@@ -2,7 +2,7 @@ import { Cache } from '../interfaces';
 
 export class DefaultCache implements Cache {
 	values: Map<
-		string | Symbol,
+		string | symbol,
 		{
 			value: any;
 			expiredTime?: number;
@@ -14,7 +14,7 @@ export class DefaultCache implements Cache {
 	}
 
 	// When there is a namespace, splice the namespace and key to form a new key
-	private getCacheKey(key: string | Symbol, namespace?: string) {
+	private getCacheKey(key: string | symbol, namespace?: string) {
 		if (namespace) {
 			return `${namespace}/${key.toString()}`;
 		}
@@ -22,7 +22,7 @@ export class DefaultCache implements Cache {
 	}
 
 	async get(
-		key: string | Symbol,
+		key: string | symbol,
 		options?: {
 			namespace?: string;
 		},
@@ -44,7 +44,7 @@ export class DefaultCache implements Cache {
 	}
 
 	async set(
-		key: string | Symbol,
+		key: string | symbol,
 		value: string,
 		expiredTime?: number,
 		options?: {

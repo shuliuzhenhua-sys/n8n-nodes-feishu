@@ -6,6 +6,8 @@ import { IHandles } from './events-template';
 import RequestHandle from './request-handle';
 import { ANY_EVENT, CAppTicket, CAppTicketHandle, CEventType } from '../consts';
 
+type EventHandler = (data: any) => Promise<any> | any;
+
 export class EventDispatcher {
 	verificationToken: string = '';
 
@@ -13,7 +15,7 @@ export class EventDispatcher {
 
 	requestHandle?: RequestHandle;
 
-	handles: Map<string, Function> = new Map();
+	handles: Map<string, EventHandler> = new Map();
 
 	cache: Cache;
 
@@ -63,7 +65,7 @@ export class EventDispatcher {
 		});
 	}
 
-	register<T = {}>(handles: IHandles & T) {
+	register<T = object>(handles: IHandles & T) {
 		Object.keys(handles).forEach((key) => {
 			if (this.handles.has(key) && key !== CAppTicketHandle) {
 				this.logger.debug(`this ${key} handle is registered`);
@@ -82,7 +84,7 @@ export class EventDispatcher {
 	}
 
 	async invoke(data: any, params?: { needCheck?: boolean }) {
-		const needCheck = params?.needCheck === false ? false : true;
+		const needCheck = params?.needCheck !== false;
 
 		if (needCheck && !this.requestHandle?.checkIsEventValidated(data)) {
 			this.logger.warn('event verification failed');
@@ -93,14 +95,20 @@ export class EventDispatcher {
 		this.logger.debug(`Event data: ${JSON.stringify(targetData)}`);
 
 		if (this.isAnyEvent) {
-			const ret = await this.handles.get(ANY_EVENT)!(targetData);
+			const handler = this.handles.get(ANY_EVENT);
+			if (!handler) {
+				this.logger.warn(`no ${ANY_EVENT} handle`);
+				return undefined;
+			}
+			const ret = await handler(targetData);
 			this.logger.info(`execute any_event handle`);
 			return ret;
 		}
 
 		const type = targetData[CEventType];
-		if (this.handles.has(type)) {
-			const ret = await this.handles.get(type)!(targetData);
+		const handler = this.handles.get(type);
+		if (handler) {
+			const ret = await handler(targetData);
 			this.logger.info(`execute ${type} handle`);
 			return ret;
 		}

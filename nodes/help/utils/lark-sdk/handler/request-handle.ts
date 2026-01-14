@@ -27,14 +27,19 @@ export default class RequestHandle {
 		const targetData = (() => {
 			const { encrypt, ...rest } = data || {};
 			if (encrypt) {
+				if (!this.aesCipher) {
+					this.logger.error('parse encrypt data failed: aesCipher is not initialized');
+					return rest;
+				}
 				try {
+					const decrypted = this.aesCipher.decrypt(encrypt);
 					return {
-						...JSON.parse(this.aesCipher?.decrypt(encrypt)!),
+						...JSON.parse(decrypted),
 						...rest,
 					};
 				} catch (e) {
-					this.logger.error('parse encrypt data failed');
-					return {};
+					this.logger.error(`parse encrypt data failed: ${e instanceof Error ? e.message : String(e)}`);
+					return rest;
 				}
 			}
 
@@ -59,46 +64,28 @@ export default class RequestHandle {
 		};
 	}
 
-	checkIsCardEventValidated(data: any): boolean {
-		/**
-		 * 1. new message card encrypt ('encrypt' in data)
-		 * 2. new message card but not encrypt ('schema' in data)
-		 */
-		if ('encrypt' in data || 'schema' in data) {
-			return this.checkIsEventValidated(data);
-		}
-
-		const {
-			'x-lark-request-timestamp': timestamp,
-			'x-lark-request-nonce': nonce,
-			'x-lark-signature': signature,
-		} = data.headers;
-
-		if (!this.verificationToken) {
-			return true;
-		}
-
-		const computedSignature = crypto
-			.createHash('sha1')
-			.update(timestamp + nonce + this.verificationToken + JSON.stringify(data))
-			.digest('hex');
-
-		return computedSignature === signature;
-	}
-
 	checkIsEventValidated(data: any): boolean {
 		if (!this.encryptKey) {
 			return true;
 		}
 
+		if (!data?.headers) {
+			this.logger.warn('event validation failed: missing headers');
+			return false;
+		}
+
 		const {
 			'x-lark-request-timestamp': timestamp,
 			'x-lark-request-nonce': nonce,
 			'x-lark-signature': signature,
 		} = data.headers;
 
-		const content = timestamp + nonce + this.encryptKey + JSON.stringify(data);
+		if (!timestamp || !nonce || !signature) {
+			this.logger.warn('event validation failed: missing required headers');
+			return false;
+		}
 
+		const content = timestamp + nonce + this.encryptKey + JSON.stringify(data);
 		const computedSignature = crypto.createHash('sha256').update(content).digest('hex');
 
 		return computedSignature === signature;

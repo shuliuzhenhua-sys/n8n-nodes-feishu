@@ -1,6 +1,6 @@
 export interface Cache {
 	set: (
-		key: string | Symbol,
+		key: string | symbol,
 		value: any,
 		expire?: number,
 		options?: {
@@ -8,7 +8,7 @@ export interface Cache {
 		},
 	) => Promise<boolean>;
 	get: (
-		key: string | Symbol,
+		key: string | symbol,
 		options?: {
 			namespace?: string;
 		},

@@ -8,10 +8,12 @@ import {
 	IRun,
 	IDataObject,
 } from 'n8n-workflow';
+import crypto from 'crypto';
 import { Credentials } from '../help/type/enums';
 import { WSClient } from '../help/utils/lark-sdk/ws-client';
 import { EventDispatcher } from '../help/utils/lark-sdk/handler/event-handler';
 import { triggerEventProperty } from '../help/utils/properties';
+import { feishuResponseManager } from '../help/utils/FeishuResponseManager';
 
 export class FeishuNodeTrigger implements INodeType {
 	description: INodeTypeDescription = {
@@ -19,9 +21,9 @@ export class FeishuNodeTrigger implements INodeType {
 		name: 'feishuNodeTrigger',
 		icon: 'file:icon.svg',
 		group: ['trigger'],
-		version: [1, 2],
-		defaultVersion: 2,
-		subtitle: '=事件: {{$parameter["events"].join(", ")}}',
+		version: [1, 2, 3],
+		defaultVersion: 3,
+		subtitle: '=已订阅 {{$parameter["events"].length}} 个事件',
 		description: '通过 WebSocket 监听飞书事件，当事件发生时启动工作流',
 		defaults: {
 			name: '飞书 Trigger',
@@ -62,6 +64,25 @@ export class FeishuNodeTrigger implements INodeType {
 			},
 			triggerEventProperty,
 			{
+				displayName: '响应模式',
+				name: 'responseMode',
+				type: 'options',
+				options: [
+					{
+						name: 'Immediately',
+						value: 'immediately',
+						description: '事件触发后立即响应',
+					},
+					{
+						name: "Using '飞书响应' Node",
+						value: 'responseNode',
+						description: '使用飞书响应节点同步返回响应',
+					},
+				],
+				default: 'immediately',
+				description: '选择何时向飞书发送响应',
+			},
+			{
 				displayName: '选项',
 				name: 'options',
 				type: 'collection',
@@ -74,7 +95,24 @@ export class FeishuNodeTrigger implements INodeType {
 						type: 'string',
 						default: '',
 						description:
-							'设置回调触发时显示给用户的提示信息。如果不设置，则不显示任何提示。',
+							'设置回调触发时显示给用户的提示信息。如果不设置，则不显示任何提示。仅在 Immediately 模式下有效。',
+						displayOptions: {
+							show: {
+								'/responseMode': ['immediately'],
+							},
+						},
+					},
+					{
+						displayName: '响应超时时间',
+						name: 'responseTimeout',
+						type: 'number',
+						default: 3000,
+						description: '等待飞书响应节点响应的最大时间（毫秒），超时后将返回空响应',
+						displayOptions: {
+							show: {
+								'/responseMode': ['responseNode'],
+							},
+						},
 					},
 				],
 			},
@@ -88,8 +126,10 @@ export class FeishuNodeTrigger implements INodeType {
 			throw new NodeOperationError(this.getNode(), '缺少必要的飞书凭证配置');
 		}
 
+		const responseMode = this.getNodeParameter('responseMode', 'immediately') as string;
 		const options = this.getNodeParameter('options', {}) as IDataObject;
 		const callbackToast = (options.callbackToast as string) || undefined;
+		const responseTimeout = (options.responseTimeout as number) || 30000;
 
 		const appId = credentials['appid'] as string;
 		const appSecret = credentials['appsecret'] as string;
@@ -114,23 +154,51 @@ export class FeishuNodeTrigger implements INodeType {
 
 			for (const event of events) {
 				handlers[event] = async (data) => {
-					let donePromise = undefined;
+					const donePromise = this.helpers.createDeferredPromise<IRun>();
 
-					donePromise = this.helpers.createDeferredPromise<IRun>();
-					this.emit([this.helpers.returnJsonArray(data)], undefined, donePromise);
+					// 生成唯一标识符用于关联 Trigger 和 Response 节点
+					const correlationId = crypto.randomUUID();
 
-					this.logger.info(`已处理事件: ${event}`);
+					// 将 responseMode 和 correlationId 注入到数据中（用于后续节点判断和关联）
+					const enrichedData = {
+						...data,
+						responseMode,
+						correlationId,
+					};
 
-					if (callbackToast) {
-						return {
-							toast: {
-								type: 'info',
-								content: callbackToast,
-							},
-						};
+					this.emit([this.helpers.returnJsonArray(enrichedData)], undefined, donePromise);
+
+					this.logger.info(`已处理事件: ${event}, correlationId: ${correlationId}`);
+
+					if (responseMode === 'immediately') {
+						// 立即响应模式
+						if (callbackToast) {
+							return {
+								toast: {
+									type: 'info',
+									content: callbackToast,
+								},
+							};
+						}
+						return {};
+					} else {
+						// 使用 Respond to Feishu 节点响应模式
+						// 注册等待响应（使用 correlationId 关联）
+						const responsePromise = feishuResponseManager.waitForResponse(
+							correlationId,
+							responseTimeout,
+						);
+
+						try {
+							const response = await responsePromise;
+							this.logger.info(`收到飞书响应节点响应: ${JSON.stringify(response)}`);
+							return response;
+						} catch (error) {
+							const errorMessage = error instanceof Error ? error.message : String(error);
+							this.logger.warn(`等待响应超时或出错: ${errorMessage}`);
+							return {};
+						}
 					}
-
-					return {};
 				};
 			}
 
