@@ -59,8 +59,7 @@ const MessageEphemeralSendOperate: ResourceOperations = {
 			displayName: '卡片内容',
 			name: 'card',
 			type: 'json',
-			default:
-				'{"elements":[{"tag":"div","text":{"content":"这是仅你可见的消息","tag":"plain_text"}}],"header":{"template":"blue","title":{"content":"私密消息","tag":"plain_text"}}}',
+			default: JSON.stringify({ elements: [{ tag: 'div', text: { content: 'This is the content', tag: 'plain_text' } }], header: { template: 'blue', title: { content: 'This is the title', tag: 'plain_text' } } }, null, 2),
 			description:
 				'消息卡片的内容。支持卡片 JSON 或搭建工具构建的卡片模板。要使用卡片 JSON，参考卡片 JSON 结构。',
 			required: true,
