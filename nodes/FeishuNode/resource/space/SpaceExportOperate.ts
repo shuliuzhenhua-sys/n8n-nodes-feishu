@@ -247,12 +247,12 @@ const SpaceExportOperate: ResourceOperations = {
 			method: 'GET',
 			url: `/open-apis/drive/v1/export_tasks/file/${fileToken}/download`,
 			json: false,
-			encoding: null,
+			encoding: undefined,
 			resolveWithFullResponse: true,
 			headers: {
 				'Content-Type': 'application/json; charset=utf-8',
 			},
-		});
+		}) as { body: Buffer; headers: Record<string, string> };
 
 		// 获取 MIME 类型映射
 		const mimeTypes: Record<string, string> = {

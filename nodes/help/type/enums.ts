@@ -40,3 +40,25 @@ export enum BaseUrl {
 	China = 'https://open.feishu.cn',
 	Global = 'https://open.larksuite.com',
 }
+
+/**
+ * 飞书 API 错误码常量
+ */
+export const FeishuErrorCodes = {
+	/** Access Token 已过期 */
+	ACCESS_TOKEN_EXPIRED: 99991663,
+	/** Access Token 无效 */
+	INVALID_ACCESS_TOKEN: 99991664,
+	/** 请求频率超限 */
+	RATE_LIMITED: 99991400,
+	/** 内部错误 */
+	INTERNAL_ERROR: 99991500,
+} as const;
+
+/**
+ * 可自动重试的错误码列表
+ */
+export const RETRYABLE_ERROR_CODES: readonly number[] = [
+	FeishuErrorCodes.ACCESS_TOKEN_EXPIRED,
+	FeishuErrorCodes.RATE_LIMITED,
+] as const;

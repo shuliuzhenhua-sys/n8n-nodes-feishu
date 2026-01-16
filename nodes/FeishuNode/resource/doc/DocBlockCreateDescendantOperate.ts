@@ -74,7 +74,7 @@ const DocBlockCreateOperate: ResourceOperations = {
 		const document_revision_id = this.getNodeParameter('document_revision_id', index, -1) as number;
 		const client_token = this.getNodeParameter('client_toke', index) as string;
 		const user_id_type = this.getNodeParameter('user_id_type', index, 'open_id') as string;
-		const body = NodeUtils.getNodeJsonData(this, 'body', index);
+		const body = NodeUtils.getNodeJsonData<IDataObject>(this, 'body', index);
 		const options = this.getNodeParameter('options', index, {}) as {
 		timeout?: number;
 	};

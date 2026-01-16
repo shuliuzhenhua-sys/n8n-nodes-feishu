@@ -10,27 +10,46 @@ import {
 } from 'n8n-workflow';
 import ResourceFactory from '../help/builder/ResourceFactory';
 import { Credentials, OutputType } from '../help/type/enums';
-import { OperationResult } from '../help/type/IResource';
+import { OperationResult, OperationCallFunction } from '../help/type/IResource';
+import { ICommonOptionsValue } from '../help/utils/sharedOptions';
 
 const resourceBuilder = ResourceFactory.build(__dirname);
 
 /**
  * 批次配置接口
  */
-interface BatchConfig {
-	enabled: boolean;  // 是否启用并发模式（用户是否显式添加了 Batching 选项）
+interface IBatchConfig {
+	/** 是否启用并发模式（用户是否显式添加了 Batching 选项） */
+	enabled: boolean;
+	/** 每批请求数量 */
 	batchSize: number;
+	/** 批次间隔（毫秒） */
 	batchInterval: number;
+}
+
+/**
+ * 多输出响应类型
+ */
+interface IMultipleOutputResponse {
+	outputType: OutputType;
+	outputData?: INodeExecutionData[][];
+}
+
+/**
+ * 请求结果类型（用于并发执行）
+ */
+interface IRequestResult {
+	itemIndex: number;
+	result?: OperationResult;
+	error?: Error;
 }
 
 /**
  * 从 options 参数中获取批次配置
  */
-function getBatchConfig(context: IExecuteFunctions): BatchConfig {
+function getBatchConfig(context: IExecuteFunctions): IBatchConfig {
 	try {
-		const options = context.getNodeParameter('options', 0, {}) as {
-			batching?: { batch?: { batchSize?: number; batchInterval?: number } };
-		};
+		const options = context.getNodeParameter('options', 0, {}) as ICommonOptionsValue;
 
 		// 检查用户是否显式添加了 Batching 选项
 		const batchingEnabled = options?.batching?.batch !== undefined;
@@ -50,16 +69,96 @@ function getBatchConfig(context: IExecuteFunctions): BatchConfig {
 }
 
 /**
+ * 获取错误信息
+ */
+function getErrorMessage(error: unknown): string {
+	if (error instanceof Error) {
+		return error.message;
+	}
+	return String(error);
+}
+
+/**
+ * 获取错误堆栈
+ */
+function getErrorStack(error: unknown): string | undefined {
+	if (error instanceof Error) {
+		return error.stack;
+	}
+	return undefined;
+}
+
+/**
+ * 检查响应是否为多输出类型
+ */
+function isMultipleOutputResponse(response: OperationResult): response is IMultipleOutputResponse {
+	return (
+		response !== null &&
+		typeof response === 'object' &&
+		'outputType' in response &&
+		(response as IMultipleOutputResponse).outputType !== undefined
+	);
+}
+
+/**
+ * 处理单个响应数据
+ * @returns 处理后的执行数据，如果是特殊输出类型则返回 null
+ */
+function processResponseData(
+	context: IExecuteFunctions,
+	responseData: OperationResult,
+	itemIndex: number,
+): { data: INodeExecutionData[] | null; multipleOutput?: INodeExecutionData[][] } {
+	// 检查是否有自定义输出类型
+	if (isMultipleOutputResponse(responseData)) {
+		const { outputType, outputData } = responseData;
+
+		if (outputType === OutputType.Multiple && outputData) {
+			// 多输出模式：返回输出数据
+			return { data: null, multipleOutput: outputData };
+		}
+
+		if (outputType === OutputType.None) {
+			// 无输出模式
+			return { data: null };
+		}
+	}
+
+	// 默认单输出模式
+	const executionData = context.helpers.constructExecutionMetaData(
+		context.helpers.returnJsonArray(responseData as IDataObject),
+		{ itemData: { item: itemIndex } },
+	);
+
+	return { data: executionData };
+}
+
+/**
+ * 创建错误输出数据
+ */
+function createErrorData(
+	context: IExecuteFunctions,
+	error: unknown,
+	itemIndex: number,
+): INodeExecutionData[] {
+	return context.helpers.constructExecutionMetaData(
+		context.helpers.returnJsonArray({ error: getErrorMessage(error) }),
+		{ itemData: { item: itemIndex } },
+	);
+}
+
+/**
  * 串行执行模式（原有逻辑，向后兼容）
  */
 async function executeSerial(
 	context: IExecuteFunctions,
 	items: INodeExecutionData[],
-	callFunc: (this: IExecuteFunctions, index: number) => Promise<OperationResult>,
-	returnData: INodeExecutionData[][],
-	resource: unknown,
-	operation: unknown,
+	callFunc: OperationCallFunction,
+	resource: string,
+	operation: string,
 ): Promise<INodeExecutionData[][]> {
+	const returnData: INodeExecutionData[][] = [[]];
+
 	for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 		try {
 			context.logger.debug('call function (serial)', {
@@ -69,46 +168,32 @@ async function executeSerial(
 			});
 
 			const responseData = await callFunc.call(context, itemIndex);
+			const processed = processResponseData(context, responseData, itemIndex);
 
-			// 检查是否有自定义输出类型
-			if (responseData && typeof responseData === 'object' && 'outputType' in responseData) {
-				const typedResponse = responseData as {
-					outputType: OutputType;
-					outputData?: INodeExecutionData[][];
-				};
-				const { outputType } = typedResponse;
+			if (processed.multipleOutput) {
+				// 多输出模式：直接返回
+				return processed.multipleOutput;
+			}
 
-				if (outputType === OutputType.Multiple && typedResponse.outputData) {
-					// 多输出模式：直接使用返回的输出数据
-					returnData = typedResponse.outputData;
-				} else if (outputType === OutputType.None) {
-					// 无输出模式
-					return [];
-				}
-				// OutputType.Single 会走下面的默认处理
-			} else {
-				// 默认单输出模式
-				const executionData = context.helpers.constructExecutionMetaData(
-					context.helpers.returnJsonArray(responseData as IDataObject),
-					{ itemData: { item: itemIndex } },
-				);
-				returnData[0].push(...executionData);
+			if (processed.data === null && !processed.multipleOutput) {
+				// 无输出模式
+				return [];
+			}
+
+			if (processed.data) {
+				returnData[0].push(...processed.data);
 			}
 		} catch (error) {
 			context.logger.error('call function error (serial)', {
 				resource,
 				operation,
 				itemIndex,
-				errorMessage: error.message,
-				stack: error.stack,
+				errorMessage: getErrorMessage(error),
+				stack: getErrorStack(error),
 			});
 
 			if (context.continueOnFail()) {
-				const executionErrorData = context.helpers.constructExecutionMetaData(
-					context.helpers.returnJsonArray({ error: error.message }),
-					{ itemData: { item: itemIndex } },
-				);
-				returnData[0].push(...executionErrorData);
+				returnData[0].push(...createErrorData(context, error, itemIndex));
 				continue;
 			}
 			throw error;
@@ -125,14 +210,14 @@ async function executeSerial(
 async function executeParallel(
 	context: IExecuteFunctions,
 	items: INodeExecutionData[],
-	callFunc: (this: IExecuteFunctions, index: number) => Promise<OperationResult>,
-	returnData: INodeExecutionData[][],
-	batchConfig: BatchConfig,
-	resource: unknown,
-	operation: unknown,
+	callFunc: OperationCallFunction,
+	batchConfig: IBatchConfig,
+	resource: string,
+	operation: string,
 ): Promise<INodeExecutionData[][]> {
 	const { batchSize, batchInterval } = batchConfig;
-	const requestPromises: Promise<{ itemIndex: number; result?: OperationResult; error?: Error }>[] = [];
+	const requestPromises: Promise<IRequestResult>[] = [];
+	const returnData: INodeExecutionData[][] = [[]];
 
 	// 阶段1：创建所有请求 Promise（带批次延迟）
 	for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
@@ -151,9 +236,10 @@ async function executeParallel(
 		});
 
 		// 创建请求 Promise（立即开始执行，不等待）
-		const requestPromise = callFunc.call(context, itemIndex)
-			.then((result) => ({ itemIndex, result }))
-			.catch((error) => ({ itemIndex, error: error as Error }));
+		const requestPromise = callFunc
+			.call(context, itemIndex)
+			.then((result): IRequestResult => ({ itemIndex, result }))
+			.catch((error): IRequestResult => ({ itemIndex, error: error as Error }));
 
 		requestPromises.push(requestPromise);
 	}
@@ -167,20 +253,16 @@ async function executeParallel(
 
 		if (response.status === 'rejected') {
 			// Promise 本身被 reject（不应该发生，因为我们在上面已经 catch 了）
-			const error = response.reason;
+			const error = response.reason as Error;
 			context.logger.error('call function error (parallel - rejected)', {
 				resource,
 				operation,
 				itemIndex: i,
-				errorMessage: error?.message,
+				errorMessage: getErrorMessage(error),
 			});
 
 			if (context.continueOnFail()) {
-				const executionErrorData = context.helpers.constructExecutionMetaData(
-					context.helpers.returnJsonArray({ error: error?.message || 'Unknown error' }),
-					{ itemData: { item: i } },
-				);
-				returnData[0].push(...executionErrorData);
+				returnData[0].push(...createErrorData(context, error, i));
 				continue;
 			}
 			throw error;
@@ -199,43 +281,31 @@ async function executeParallel(
 			});
 
 			if (context.continueOnFail()) {
-				const executionErrorData = context.helpers.constructExecutionMetaData(
-					context.helpers.returnJsonArray({ error: error.message }),
-					{ itemData: { item: itemIndex } },
-				);
-				returnData[0].push(...executionErrorData);
+				returnData[0].push(...createErrorData(context, error, itemIndex));
 				continue;
 			}
 			throw error;
 		}
 
+		if (result === undefined) {
+			continue;
+		}
+
 		// 处理成功的响应
-		const responseData = result;
+		const processed = processResponseData(context, result, itemIndex);
 
-		// 检查是否有自定义输出类型
-		if (responseData && typeof responseData === 'object' && 'outputType' in responseData) {
-			const typedResponse = responseData as {
-				outputType: OutputType;
-				outputData?: INodeExecutionData[][];
-			};
-			const { outputType } = typedResponse;
+		if (processed.multipleOutput) {
+			// 多输出模式：直接返回（注意：在并发模式下，多输出可能会有问题）
+			return processed.multipleOutput;
+		}
 
-			if (outputType === OutputType.Multiple && typedResponse.outputData) {
-				// 多输出模式：直接使用返回的输出数据
-				// 注意：在并发模式下，多输出可能会有问题，这里保持原有逻辑
-				returnData = typedResponse.outputData;
-			} else if (outputType === OutputType.None) {
-				// 无输出模式：跳过
-				continue;
-			}
-			// OutputType.Single 会走下面的默认处理
-		} else {
-			// 默认单输出模式
-			const executionData = context.helpers.constructExecutionMetaData(
-				context.helpers.returnJsonArray(responseData as IDataObject),
-				{ itemData: { item: itemIndex } },
-			);
-			returnData[0].push(...executionData);
+		if (processed.data === null && !processed.multipleOutput) {
+			// 无输出模式：跳过
+			continue;
+		}
+
+		if (processed.data) {
+			returnData[0].push(...processed.data);
 		}
 	}
 
@@ -315,37 +385,30 @@ export class FeishuNode implements INodeType {
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 
-		// 使用数组初始化，支持多输出
-		const returnData: INodeExecutionData[][] = Array.from({ length: 1 }, () => []);
-
-		const resource = this.getNodeParameter('resource', 0);
-		const operation = this.getNodeParameter('operation', 0);
+		const resource = this.getNodeParameter('resource', 0) as string;
+		const operation = this.getNodeParameter('operation', 0) as string;
 
 		const callFunc = resourceBuilder.getCall(resource, operation);
 
 		if (!callFunc) {
 			throw new NodeOperationError(
 				this.getNode(),
-				'未实现方法: ' + resource + '.' + operation,
+				`未实现方法: ${resource}.${operation}`,
 			);
 		}
 
 		// 获取批次配置
 		const batchConfig = getBatchConfig(this);
 
-		// 类型断言：将 callFunc 转换为正确的类型
-		type CallFuncType = (this: IExecuteFunctions, index: number) => Promise<OperationResult>;
-		const typedCallFunc = callFunc as CallFuncType;
-
 		// 根据是否显式设置了 Batching 选项来选择执行策略：
 		// - enabled === false（默认，未添加 Batching）：串行模式，逐个执行
 		// - enabled === true（添加了 Batching）：并发模式，每批请求同时发送
 		if (batchConfig.enabled) {
 			// 并发模式：类似 HttpRequest 节点
-			return executeParallel(this, items, typedCallFunc, returnData, batchConfig, resource, operation);
-		} else {
-			// 串行模式：原有逻辑（向后兼容）
-			return executeSerial(this, items, typedCallFunc, returnData, resource, operation);
+			return executeParallel(this, items, callFunc, batchConfig, resource, operation);
 		}
+
+		// 串行模式：原有逻辑（向后兼容）
+		return executeSerial(this, items, callFunc, resource, operation);
 	}
 }

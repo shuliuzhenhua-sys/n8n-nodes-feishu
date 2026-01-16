@@ -208,7 +208,7 @@ const MessageBatchSendOperate: ResourceOperations = {
 
 		// 根据消息类型构建 content 或 card
 		if (msg_type === 'interactive') {
-			const card = NodeUtils.getNodeJsonData(this, 'card', index, null) as object;
+			const card = NodeUtils.getNodeJsonData<IDataObject>(this, 'card', index, {});
 			body.card = card;
 		} else {
 			let content: IDataObject;

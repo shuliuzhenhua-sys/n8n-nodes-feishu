@@ -211,9 +211,9 @@ export default {
 			qs: {
 				page_size: 100,
 			},
-		});
+		}) as { items?: Array<{ field_name: string }> };
 
-		const nowFieldList = res.data.items;
+		const nowFieldList = res.items || [];
 		// 找到不存在的字段列表
 		const noExistFieldList = [];
 

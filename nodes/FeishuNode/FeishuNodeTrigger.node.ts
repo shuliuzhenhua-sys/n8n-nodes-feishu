@@ -129,7 +129,8 @@ export class FeishuNodeTrigger implements INodeType {
 		const responseMode = this.getNodeParameter('responseMode', 'immediately') as string;
 		const options = this.getNodeParameter('options', {}) as IDataObject;
 		const callbackToast = (options.callbackToast as string) || undefined;
-		const responseTimeout = (options.responseTimeout as number) || 30000;
+		// 使用与 UI 默认值一致的 3000ms
+	const responseTimeout = (options.responseTimeout as number) || 3000;
 
 		const appId = credentials['appid'] as string;
 		const appSecret = credentials['appsecret'] as string;
@@ -150,7 +151,7 @@ export class FeishuNodeTrigger implements INodeType {
 		const startWsClient = async () => {
 			const events = this.getNodeParameter('events', []) as string[];
 			const isAnyEvent = events.includes('any_event');
-			const handlers: Record<string, (data: any) => Promise<IDataObject>> = {};
+			const handlers: Record<string, (data: IDataObject) => Promise<IDataObject>> = {};
 
 			for (const event of events) {
 				handlers[event] = async (data) => {

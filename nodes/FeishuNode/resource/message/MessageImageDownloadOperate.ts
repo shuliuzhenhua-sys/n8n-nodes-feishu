@@ -48,9 +48,9 @@ const MessageImageDownloadOperate: ResourceOperations = {
 			method: 'GET',
 			url: `/open-apis/im/v1/images/${image_key}`,
 			json: false,
-			encoding: null,
+			encoding: undefined,
 			resolveWithFullResponse: true,
-		});
+		}) as { body: Buffer; headers: Record<string, string> };
 
 		// 获取响应的 content-type
 		const contentType = response.headers['content-type'] || 'image/png';

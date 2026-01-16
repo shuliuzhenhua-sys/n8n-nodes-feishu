@@ -59,12 +59,12 @@ const MessageFileDownloadOperate: ResourceOperations = {
 			method: 'GET',
 			url: `/open-apis/im/v1/files/${file_key}`,
 			json: false,
-			encoding: null,
+			encoding: undefined,
 			resolveWithFullResponse: true,
 			headers: {
 				'Content-Type': 'application/json; charset=utf-8',
 			},
-		});
+		}) as { body: Buffer; headers: Record<string, string> };
 
 		// 获取响应的 content-type，优先使用用户自定义的 MIME Type
 		const contentType =

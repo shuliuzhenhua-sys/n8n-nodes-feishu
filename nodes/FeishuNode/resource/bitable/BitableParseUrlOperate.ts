@@ -62,15 +62,15 @@ const BitableParseUrlOperate: ResourceOperations = {
 			if (matches) {
 				let wikiToken = matches[1];
 				// wiki 开头需要处理
-				const res = await RequestUtils.request.call(this, {
-					method: 'GET',
-					url: '/open-apis/wiki/v2/spaces/get_node',
-					qs: {
-						token: wikiToken,
-						obj_type: 'wiki'
-					},
-				})
-				data.app_token = res?.data?.node?.obj_token
+			const res = await RequestUtils.request.call(this, {
+				method: 'GET',
+				url: '/open-apis/wiki/v2/spaces/get_node',
+				qs: {
+					token: wikiToken,
+					obj_type: 'wiki'
+				},
+			}) as { node?: { obj_token?: string } };
+			data.app_token = res?.node?.obj_token
 			}
 		}
 		matches = url.match(/table=(.*?)(&|$)/);
