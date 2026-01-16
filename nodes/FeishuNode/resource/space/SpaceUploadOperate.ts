@@ -1,7 +1,8 @@
 import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
-import { ResourceOperations } from '../../../help/type/IResource';
+import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
+import FormData from 'form-data';
 
 export default {
 	name: '上传素材',
@@ -72,11 +73,12 @@ export default {
 		},
 
 		{
-			displayName: '二进制文件字段',
+			displayName: 'Input Data Field Name',
 			name: 'fileFieldName',
 			type: 'string',
-			default: 'file',
+			default: 'data',
 			required: true,
+			description: 'The name of the incoming field containing the binary file data to be processed',
 		},
 		{
 			displayName: '文件名称',
@@ -97,24 +99,17 @@ export default {
 			throw new NodeOperationError(this.getNode(), 'No file name given for media upload.');
 		}
 
-		// const formData = new FormData();
-		// formData.append("file_name",fileName );
-		// formData.append("parent_type",parent_type );
-		// formData.append("parent_node",parent_node );
-		// formData.append('size', file.value.length);
-		// formData.append('file', file.value, { contentType: file.options.mimeType, filename: fileName });
+		const formData = new FormData();
+		formData.append('file_name', fileName);
+		formData.append('parent_type', parent_type);
+		formData.append('parent_node', parent_node);
+		formData.append('size', file.value.length);
+		formData.append('file', file.value);
 
 		return RequestUtils.request.call(this, {
 			method: 'POST',
 			url: `/open-apis/drive/v1/medias/upload_all`,
-			// @ts-ignore
-			formData: {
-				file_name: fileName,
-				parent_type,
-				parent_node,
-				size: file.value.length,
-				file: file,
-			},
-		});
+			body: formData,
+		} as IExtendedHttpRequestOptions);
 	},
 } as ResourceOperations;

@@ -92,28 +92,45 @@ export default {
 		const parent_node = this.getNodeParameter('parent_node', index) as string;
 		const url = this.getNodeParameter('url', index) as string;
 
-		const res = await this.helpers.request(url, {
-			useStream: true,
-		});
+		// 从外部 URL 下载文件，确保正确处理二进制数据流并获取 Content-Type
+		// 使用 encoding: 'arraybuffer' 确保以二进制流方式下载，避免字符编码转换导致乱码
+		const response = (await this.helpers.httpRequest({
+			method: 'GET',
+			url,
+			json: false,
+			encoding: 'arraybuffer',
+			returnFullResponse: true,
+		})) as { body: Buffer | ArrayBuffer; headers: Record<string, string | string[] | undefined> };
 
-		// 流转换为 buffer
-		const chunks: Buffer[] = [];
-		for await (const chunk of res) {
-			chunks.push(chunk);
+		// 确保响应体是 Buffer 格式
+		// arraybuffer 编码会返回 ArrayBuffer，需要转换为 Buffer
+		const file = Buffer.isBuffer(response.body)
+			? response.body
+			: Buffer.from(response.body as ArrayBuffer);
+
+		// 从响应头获取 Content-Type，如果没有则使用默认值
+		let contentType: string = 'application/octet-stream';
+		const contentTypeHeader = response.headers['content-type'] || response.headers['Content-Type'];
+		if (typeof contentTypeHeader === 'string') {
+			contentType = contentTypeHeader;
+		} else if (Array.isArray(contentTypeHeader) && contentTypeHeader.length > 0) {
+			contentType = contentTypeHeader[0];
 		}
-		const file = Buffer.concat(chunks);
+
+		// 清理 Content-Type（移除可能的参数，如 charset）
+		const cleanContentType = contentType.split(';')[0].trim();
 
 		const formData = new FormData();
 		formData.append('file_name', file_name);
 		formData.append('parent_type', parent_type);
 		formData.append('parent_node', parent_node);
 		formData.append('size', file.byteLength);
-		formData.append('file', file, { contentType: 'image/png', filename: file_name });
+		formData.append('file', file, { contentType: cleanContentType, filename: file_name });
 
 		return RequestUtils.request.call(this, {
 			method: 'POST',
 			url: `/open-apis/drive/v1/medias/upload_all`,
-			formData: formData,
+			body: formData,
 		} as IExtendedHttpRequestOptions);
 	},
 } as ResourceOperations;

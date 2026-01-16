@@ -1,6 +1,6 @@
 import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
-import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
+import { ResourceOperations } from '../../../help/type/IResource';
 
 const MessageFileDownloadOperate: ResourceOperations = {
 	name: '下载文件',
@@ -15,12 +15,12 @@ const MessageFileDownloadOperate: ResourceOperations = {
 			description: '文件的 Key，通过上传文件接口上传文件后，从返回结果中获取',
 		},
 		{
-			displayName: '输出字段名',
+			displayName: 'Put Output File in Field',
 			name: 'binaryPropertyName',
 			type: 'string',
 			default: 'data',
 			required: true,
-			description: '用于存储下载文件的二进制数据的字段名',
+			description: 'The name of the output binary field to put the file in',
 		},
 		{
 			displayName: '选项',
@@ -42,7 +42,7 @@ const MessageFileDownloadOperate: ResourceOperations = {
 					type: 'string',
 					default: '',
 					description:
-						'自定义文件的 MIME 类型。如不填写，将使用响应头中的 Content-Type。常见类型：application/pdf、video/mp4、audio/opus',
+						'自定义文件的 MIME 类型。如不填写，将自动识别。常见类型：application/pdf、video/mp4、audio/opus',
 				},
 			],
 		},
@@ -55,46 +55,17 @@ const MessageFileDownloadOperate: ResourceOperations = {
 			mimeType?: string;
 		};
 
-		const response = (await RequestUtils.originRequest.call(this, {
+		const buffer = await RequestUtils.request.call(this, {
 			method: 'GET',
 			url: `/open-apis/im/v1/files/${file_key}`,
+			encoding: 'arraybuffer',
 			json: false,
-			encoding: undefined,
-			resolveWithFullResponse: true,
-			headers: {
-				'Content-Type': 'application/json; charset=utf-8',
-			},
-		} as IExtendedHttpRequestOptions)) as { body: Buffer; headers: Record<string, string> };
+		});
 
-		// 获取响应的 content-type，优先使用用户自定义的 MIME Type
-		const contentType =
-			options.mimeType?.trim() || response.headers?.['content-type'] || 'application/octet-stream';
+		const fileName = options.fileName?.trim() || undefined;
+		const mimeType = options.mimeType?.trim() || undefined;
 
-		// 尝试从 Content-Disposition 获取文件名
-		let defaultFileName = file_key;
-		const contentDisposition = response.headers?.['content-disposition'];
-		if (contentDisposition) {
-			const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-			if (match && match[1]) {
-				defaultFileName = match[1].replace(/['"]/g, '');
-				// 处理 URL 编码的文件名
-				try {
-					defaultFileName = decodeURIComponent(defaultFileName);
-				} catch {
-					// 解码失败时保持原样
-				}
-			}
-		}
-
-		// 使用自定义文件名或从响应中获取的文件名
-		const fileName = options.fileName?.trim() || defaultFileName;
-
-		// 将二进制数据准备为 n8n 可以处理的格式
-		const binaryData = await this.helpers.prepareBinaryData(
-			Buffer.from(response.body),
-			fileName,
-			contentType,
-		);
+		const binaryData = await this.helpers.prepareBinaryData(buffer, fileName, mimeType);
 
 		return {
 			binary: {
@@ -103,7 +74,7 @@ const MessageFileDownloadOperate: ResourceOperations = {
 			json: {
 				file_key,
 				fileName,
-				mimeType: contentType,
+				mimeType,
 			},
 		};
 	},

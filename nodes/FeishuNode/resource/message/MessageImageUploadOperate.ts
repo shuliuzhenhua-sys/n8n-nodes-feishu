@@ -2,6 +2,7 @@ import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
+import FormData from 'form-data';
 
 const MessageImageUploadOperate: ResourceOperations = {
 	name: '上传图片',
@@ -26,12 +27,12 @@ const MessageImageUploadOperate: ResourceOperations = {
 			description: '图片类型。message：用于发送消息；avatar：用于设置头像',
 		},
 		{
-			displayName: '二进制文件字段',
+			displayName: 'Input Data Field Name',
 			name: 'fileFieldName',
 			type: 'string',
 			default: 'data',
 			required: true,
-			description: '输入数据中包含图片二进制数据的字段名',
+			description: 'The name of the incoming field containing the binary file data to be processe',
 		},
 	],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
@@ -46,13 +47,14 @@ const MessageImageUploadOperate: ResourceOperations = {
 			);
 		}
 
+		const formData = new FormData();
+		formData.append('image_type', image_type);
+		formData.append('image', file.value);
+
 		return RequestUtils.request.call(this, {
 			method: 'POST',
 			url: '/open-apis/im/v1/images',
-			formData: {
-				image_type,
-				image: file,
-			},
+			body: formData,
 		} as IExtendedHttpRequestOptions);
 	},
 };

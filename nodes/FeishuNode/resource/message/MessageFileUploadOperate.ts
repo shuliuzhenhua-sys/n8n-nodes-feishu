@@ -2,6 +2,7 @@ import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
+import FormData from 'form-data';
 
 const MessageFileUploadOperate: ResourceOperations = {
 	name: '上传文件',
@@ -55,12 +56,12 @@ const MessageFileUploadOperate: ResourceOperations = {
 			description: '带后缀的文件名，例如：测试视频.mp4',
 		},
 		{
-			displayName: '二进制文件字段',
+			displayName: 'Input Data Field Name',
 			name: 'fileFieldName',
 			type: 'string',
 			default: 'data',
 			required: true,
-			description: '输入数据中包含文件二进制数据的字段名',
+			description: 'The name of the incoming field containing the binary file data to be processed',
 		},
 		{
 			displayName: '选项',
@@ -98,21 +99,20 @@ const MessageFileUploadOperate: ResourceOperations = {
 			throw new NodeOperationError(this.getNode(), '文件名不能为空');
 		}
 
-		const formData: IDataObject = {
-			file_type,
-			file_name,
-			file,
-		};
+		const formData = new FormData();
+		formData.append('file_type', file_type);
+		formData.append('file_name', file_name);
+		formData.append('file', file.value);
 
 		// 添加可选的时长参数
 		if (options.duration && options.duration > 0) {
-			formData.duration = options.duration.toString();
+			formData.append('duration', options.duration.toString());
 		}
 
 		return RequestUtils.request.call(this, {
 			method: 'POST',
 			url: '/open-apis/im/v1/files',
-			formData,
+			body: formData,
 		} as IExtendedHttpRequestOptions);
 	},
 };

@@ -28,7 +28,7 @@ export class FeishuNodeTrigger implements INodeType {
 		defaults: {
 			name: '飞书 Trigger',
 		},
-		usableAsTool: true,
+		usableAsTool: undefined,
 		inputs: [],
 		outputs: [NodeConnectionTypes.Main],
 		credentials: [

@@ -18,7 +18,7 @@ export class RespondToFeishu implements INodeType {
 		icon: 'file:icon.svg',
 		group: ['output'],
 		version: 1,
-		usableAsTool: true,
+		usableAsTool: undefined,
 		subtitle:
 			'={{$parameter["respondWith"] === "noResponse" ? "不返回任何响应" : "返回自定义 JSON 数据"}}',
 		description: '同步响应飞书 Trigger 的请求',

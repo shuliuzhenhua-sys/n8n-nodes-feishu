@@ -2,6 +2,7 @@ import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
+import FormData from 'form-data';
 
 /**
  * 计算 Adler-32 校验和
@@ -63,12 +64,12 @@ const SpaceChunkUploadOperate: ResourceOperations = {
 			description: '云空间中文件夹的 token，获取方式见飞书文档',
 		},
 		{
-			displayName: '二进制文件字段',
+			displayName: 'Input Data Field Name',
 			name: 'fileFieldName',
 			type: 'string',
 			default: 'data',
 			required: true,
-			description: '输入数据中包含文件二进制数据的字段名',
+			description: 'The name of the incoming field containing the binary file data to be processed',
 		},
 		{
 			displayName: '选项',
@@ -195,30 +196,23 @@ const SpaceChunkUploadOperate: ResourceOperations = {
 				const chunkSize = chunkBuffer.length;
 
 				// 构建分片上传表单数据
-				const formData: IDataObject = {
-					upload_id,
-					seq,
-					size: chunkSize,
-					file: {
-						value: chunkBuffer,
-						options: {
-							filename: `part_${seq}`,
-							contentType: 'application/octet-stream',
-						},
-					},
-				};
+				const formData = new FormData();
+				formData.append('upload_id', upload_id);
+				formData.append('seq', seq);
+				formData.append('size', chunkSize);
+				formData.append('file', chunkBuffer);
 
 				// 添加校验和（如果启用）
 				if (enableChecksum) {
 					const checksum = calculateAdler32(chunkBuffer);
-					formData.checksum = checksum.toString();
+					formData.append('checksum', checksum.toString());
 				}
 
 				// 上传分片
 				const partResponse = await boundRequest({
 					method: 'POST',
 					url: '/open-apis/drive/v1/files/upload_part',
-					formData,
+					body: formData,
 					timeout: requestOptions.timeout,
 				} as IExtendedHttpRequestOptions);
 

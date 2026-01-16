@@ -2,6 +2,7 @@ import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
+import FormData from 'form-data';
 
 const SpaceFileUploadOperate: ResourceOperations = {
 	name: '上传文件',
@@ -17,12 +18,12 @@ const SpaceFileUploadOperate: ResourceOperations = {
 			description: '云空间中文件夹的 token，获取方式见飞书文档',
 		},
 		{
-			displayName: '二进制文件字段',
+			displayName: 'Input Data Field Name',
 			name: 'fileFieldName',
 			type: 'string',
 			default: 'data',
 			required: true,
-			description: '输入数据中包含文件二进制数据的字段名',
+			description: 'The name of the incoming field containing the binary file data to be processed',
 		},
 		{
 			displayName: '选项',
@@ -99,23 +100,22 @@ const SpaceFileUploadOperate: ResourceOperations = {
 			);
 		}
 
-		const formData: IDataObject = {
-			file_name,
-			parent_type: 'explorer',
-			parent_node,
-			size: fileSize,
-			file,
-		};
+		const formData = new FormData();
+		formData.append('file_name', file_name);
+		formData.append('parent_type', 'explorer');
+		formData.append('parent_node', parent_node);
+		formData.append('size', fileSize);
+		formData.append('file', file.value);
 
 		// 添加可选的校验和参数
 		if (options.checksum) {
-			formData.checksum = options.checksum;
+			formData.append('checksum', options.checksum);
 		}
 
 		return RequestUtils.request.call(this, {
 			method: 'POST',
 			url: '/open-apis/drive/v1/files/upload_all',
-			formData,
+			body: formData,
 			timeout: options.timeout,
 		} as IExtendedHttpRequestOptions);
 	},

@@ -2,18 +2,19 @@ import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
+import FormData from 'form-data';
 
 const AilyFileUploadOperate: ResourceOperations = {
 	name: '文件上传',
 	value: 'aily:fileUpload',
 	options: [
 		{
-			displayName: '二进制文件字段',
+			displayName: 'Input Data Field Name',
 			name: 'fileFieldName',
 			type: 'string',
 			default: 'data',
 			required: true,
-			description: '输入数据中包含文件二进制数据的字段名',
+			description: 'The name of the incoming field containing the binary file data to be processed',
 		},
 		{
 			displayName: 'Options',
@@ -62,21 +63,15 @@ const AilyFileUploadOperate: ResourceOperations = {
 		// 使用 options 中的文件名，如果没有则使用原始文件名
 		const file_name = options.file_name || file.options?.filename || 'file';
 
-		// 同步更新文件对象中的 filename
-		if (options.file_name && file.options) {
-			file.options.filename = options.file_name;
-		}
-
-		const formData: IDataObject = {
-			file_name,
-			file,
-		};
+		const formData = new FormData();
+		formData.append('file_name', file_name);
+		formData.append('file', file.value);
 
 		// 构建请求选项
 		const requestOptions: IExtendedHttpRequestOptions = {
 			method: 'POST',
 			url: '/open-apis/aily/v1/files',
-			formData,
+			body: formData,
 		};
 
 		// 添加超时配置

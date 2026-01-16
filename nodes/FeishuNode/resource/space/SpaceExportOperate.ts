@@ -6,7 +6,7 @@ import {
 	sleep,
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
-import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
+import { ResourceOperations } from '../../../help/type/IResource';
 
 // 导出任务状态枚举
 const JOB_STATUS = {
@@ -243,84 +243,20 @@ const SpaceExportOperate: ResourceOperations = {
 			throw new NodeOperationError(this.getNode(), '导出任务完成但未返回 file_token');
 		}
 
-		const response = (await RequestUtils.originRequest.call(this, {
+		const buffer = await RequestUtils.request.call(this, {
 			method: 'GET',
 			url: `/open-apis/drive/v1/export_tasks/file/${fileToken}/download`,
+			encoding: 'arraybuffer',
 			json: false,
-			encoding: undefined,
-			resolveWithFullResponse: true,
-			headers: {
-				'Content-Type': 'application/json; charset=utf-8',
-			},
-		} as IExtendedHttpRequestOptions)) as { body: Buffer; headers: Record<string, string> };
+		});
 
-		// 获取 MIME 类型映射
-		const mimeTypes: Record<string, string> = {
-			docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-			pdf: 'application/pdf',
-			xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-			csv: 'text/csv',
-		};
-
-		// 优先使用响应头的 content-type，否则根据扩展名确定
+		// 构建文件名：优先使用用户自定义文件名，其次使用导出结果中的文件名
 		const fileExtension = (exportResult.file_extension as string) || file_extension;
-		const contentType =
-			response.headers?.['content-type'] || mimeTypes[fileExtension] || 'application/octet-stream';
-
-		// 构建文件名：优先使用导出结果中的文件名
 		const baseName = (exportResult.file_name as string) || 'exported_file';
-		let fullFileName = `${baseName}.${fileExtension}`;
+		const defaultFileName = `${baseName}.${fileExtension}`;
+		const fileName = options.fileName?.trim() || defaultFileName;
 
-		// 尝试从 Content-Disposition 获取文件名
-		const contentDisposition = response.headers?.['content-disposition'];
-		if (contentDisposition) {
-			// 优先匹配 RFC 5987 格式: filename*=UTF-8''encoded_filename
-			const rfc5987Match = contentDisposition.match(
-				/filename\*\s*=\s*(?:UTF-8|utf-8)'[^']*'([^;\s]+)/i,
-			);
-			if (rfc5987Match && rfc5987Match[1]) {
-				try {
-					fullFileName = decodeURIComponent(rfc5987Match[1]);
-				} catch {
-					// 解码失败时尝试其他方式
-				}
-			} else {
-				// 回退到普通 filename 格式
-				const match = contentDisposition.match(/filename\s*=\s*((['"]).*?\2|[^;\s]+)/);
-				if (match && match[1]) {
-					let headerFileName = match[1].replace(/['"]/g, '');
-					try {
-						// 尝试 URL 解码
-						headerFileName = decodeURIComponent(headerFileName);
-					} catch {
-						// 尝试将 Latin-1 编码的字节转换为 UTF-8
-						try {
-							const bytes = new Uint8Array(
-								headerFileName.split('').map((c: string) => c.charCodeAt(0)),
-							);
-							headerFileName = new TextDecoder('utf-8').decode(bytes);
-						} catch {
-							// 解码失败时保持原样
-						}
-					}
-					if (headerFileName) {
-						fullFileName = headerFileName;
-					}
-				}
-			}
-		}
-
-		// 如果用户提供了自定义文件名，则使用自定义文件名
-		if (options.fileName?.trim()) {
-			fullFileName = options.fileName.trim();
-		}
-
-		// 使用 n8n 的 prepareBinaryData 处理二进制数据
-		const binaryData = await this.helpers.prepareBinaryData(
-			Buffer.from(response.body),
-			fullFileName,
-			contentType,
-		);
+		const binaryData = await this.helpers.prepareBinaryData(buffer, fileName);
 
 		return {
 			json: {
@@ -330,8 +266,7 @@ const SpaceExportOperate: ResourceOperations = {
 				file_extension: exportResult.file_extension,
 				file_size: exportResult.file_size,
 				type: exportResult.type,
-				fileName: fullFileName,
-				mimeType: contentType,
+				fileName,
 			},
 			binary: {
 				[binaryPropertyName]: binaryData,

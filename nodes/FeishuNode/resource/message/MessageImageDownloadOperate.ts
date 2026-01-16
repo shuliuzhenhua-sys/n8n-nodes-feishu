@@ -1,6 +1,6 @@
 import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
-import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
+import { ResourceOperations } from '../../../help/type/IResource';
 
 const MessageImageDownloadOperate: ResourceOperations = {
 	name: '下载图片',
@@ -15,12 +15,12 @@ const MessageImageDownloadOperate: ResourceOperations = {
 			description: '图片的 Key，通过上传图片接口上传图片后，在返回结果中获取',
 		},
 		{
-			displayName: '输出字段名',
+			displayName: 'Put Output File in Field',
 			name: 'binaryPropertyName',
 			type: 'string',
 			default: 'data',
 			required: true,
-			description: '用于存储下载图片的二进制数据的字段名',
+			description: 'The name of the output binary field to put the file in',
 		},
 		{
 			displayName: '选项',
@@ -34,7 +34,14 @@ const MessageImageDownloadOperate: ResourceOperations = {
 					name: 'fileName',
 					type: 'string',
 					default: '',
-					description: '自定义保存的文件名（不包含扩展名，扩展名会根据图片类型自动添加）',
+					description: '自定义保存的文件名（包含扩展名）',
+				},
+				{
+					displayName: 'MIME Type',
+					name: 'mimeType',
+					type: 'string',
+					default: '',
+					description: '自定义图片的 MIME 类型。如不填写，将自动识别。常见类型：image/png、image/jpeg、image/gif',
 				},
 			],
 		},
@@ -42,41 +49,22 @@ const MessageImageDownloadOperate: ResourceOperations = {
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 		const image_key = this.getNodeParameter('image_key', index) as string;
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
-		const options = this.getNodeParameter('options', index, {}) as { fileName?: string };
+		const options = this.getNodeParameter('options', index, {}) as {
+			fileName?: string;
+			mimeType?: string;
+		};
 
-		const response = (await RequestUtils.originRequest.call(this, {
+		const buffer = await RequestUtils.request.call(this, {
 			method: 'GET',
 			url: `/open-apis/im/v1/images/${image_key}`,
+			encoding: 'arraybuffer',
 			json: false,
-			encoding: undefined,
-			resolveWithFullResponse: true,
-		} as IExtendedHttpRequestOptions)) as { body: Buffer; headers: Record<string, string> };
+		});
 
-		// 获取响应的 content-type
-		const contentType = response.headers['content-type'] || 'image/png';
+		const fileName = options.fileName?.trim() || undefined;
+		const mimeType = options.mimeType?.trim() || undefined;
 
-		// 从 content-type 推断文件扩展名
-		let fileExtension = 'png';
-		if (contentType.includes('jpeg') || contentType.includes('jpg')) {
-			fileExtension = 'jpg';
-		} else if (contentType.includes('gif')) {
-			fileExtension = 'gif';
-		} else if (contentType.includes('webp')) {
-			fileExtension = 'webp';
-		} else if (contentType.includes('png')) {
-			fileExtension = 'png';
-		}
-
-		// 使用自定义文件名或默认使用 image_key
-		const baseName = options.fileName?.trim() || image_key;
-		const fileName = `${baseName}.${fileExtension}`;
-
-		// 将二进制数据准备为 n8n 可以处理的格式
-		const binaryData = await this.helpers.prepareBinaryData(
-			Buffer.from(response.body),
-			fileName,
-			contentType,
-		);
+		const binaryData = await this.helpers.prepareBinaryData(buffer, fileName, mimeType);
 
 		return {
 			binary: {
@@ -85,7 +73,7 @@ const MessageImageDownloadOperate: ResourceOperations = {
 			json: {
 				image_key,
 				fileName,
-				mimeType: contentType,
+				mimeType,
 			},
 		};
 	},

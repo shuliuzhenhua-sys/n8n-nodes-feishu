@@ -1,6 +1,7 @@
 import { IExecuteFunctions, IHttpRequestOptions, JsonObject, NodeApiError } from 'n8n-workflow';
 import { Credentials } from '../type/enums';
 
+
 class RequestUtils {
 	static async originRequest(
 		this: IExecuteFunctions,
@@ -48,6 +49,7 @@ class RequestUtils {
 		return RequestUtils.originRequest
 			.call(this, options)
 			.then((res) => {
+				// 对于二进制数据（如文件下载），直接返回
 				if (res instanceof Buffer || res instanceof ArrayBuffer || res instanceof Uint8Array) {
 					return res;
 				}
@@ -56,7 +58,7 @@ class RequestUtils {
 					throw new Error(`Request Feishu API Error: ${res.code}, ${res.msg}`);
 				}
 
-				return res;
+				return res.data ?? res;
 			})
 			.catch((error) => {
 				if (error.context && error.context.data) {
