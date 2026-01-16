@@ -1,74 +1,73 @@
 {
-	"name": "@luka-cat-mimi/n8n-nodes-feishu",
-	"version": "0.6.0",
-	"description": "飞书 N8N 集成插件",
-	"keywords": [
-		"n8n",
-		"n8n-node",
-		"n8n-community-node-package",
-		"feishu",
-		"飞书"
-	],
-	"license": "MIT",
-	"publishConfig": {
-		"access": "public",
-		"registry": "https://registry.npmjs.org/"
-	},
-	"homepage": "https://github.com/luka-n8n-nodes/n8n-nodes-feishu#readme",
-	"author": {
-		"name": "luka-cat",
-		"email": "luka.cat.mimi@gmail.com"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/luka-n8n-nodes/n8n-nodes-feishu.git"
-	},
-	"engines": {
-		"node": ">=20.15"
-	},
-	"main": "index.js",
-	"scripts": {
-		"build": "npx rimraf dist && tsc && gulp build:assets",
-		"dev": "tsc --watch",
-		"format": "prettier credentials nodes --write",
-		"lint": "eslint \"credentials/**/*.ts\" \"nodes/**/*.ts\" package.json",
-		"lintfix": "eslint \"credentials/**/*.ts\" \"nodes/**/*.ts\" package.json --fix",
-		"prepublishOnly": "npm run build && npm run lint"
-	},
-	"files": [
-		"dist"
-	],
-	"n8n": {
-		"n8nNodesApiVersion": 1,
-		"credentials": [
-			"dist/credentials/FeishuNodeCredentialsApi.credentials.js",
-			"dist/credentials/FeishuNodeOauth2Api.credentials.js"
-		],
-		"nodes": [
-			"dist/nodes/FeishuNode/FeishuNode.node.js",
-			"dist/nodes/FeishuNode/FeishuNodeTrigger.node.js",
-			"dist/nodes/FeishuNode/RespondToFeishu.node.js"
-		]
-	},
-	"devDependencies": {
-		"@n8n/node-cli": "*",
-		"@types/node": "^20.0.0",
-		"@types/ws": "^8.5.13",
-		"eslint": "9.32.0",
-		"form-data": "^4.0.1",
-		"glob": "^10.4.5",
-		"gulp": "^5.0.0",
-		"prettier": "3.6.2",
-		"release-it": "^19.0.4",
-		"require-glob": "^4.1.0",
-		"typescript": "5.9.2"
-	},
-	"dependencies": {
-		"ws": "^8.18.0",
-		"protobufjs": "^7.5.3"
-	},
-	"peerDependencies": {
-		"n8n-workflow": "*"
-	},
-	"packageManager": "pnpm@10.22.0+sha512.bf049efe995b28f527fd2b41ae0474ce29186f7edcb3bf545087bd61fbbebb2bf75362d1307fda09c2d288e1e499787ac12d4fcb617a974718a6051f2eee741c"
+  "name": "@luka-cat-mimi/n8n-nodes-feishu",
+  "version": "0.6.1",
+  "description": "飞书 N8N 集成插件",
+  "keywords": [
+    "n8n",
+    "n8n-node",
+    "n8n-community-node-package",
+    "feishu",
+    "飞书"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "homepage": "https://github.com/luka-n8n-nodes/n8n-nodes-feishu#readme",
+  "author": {
+    "name": "luka-cat",
+    "email": "luka.cat.mimi@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luka-n8n-nodes/n8n-nodes-feishu.git"
+  },
+  "engines": {
+    "node": ">=20.15"
+  },
+  "main": "index.js",
+  "scripts": {
+    "build": "npx rimraf dist && tsc && gulp build:assets",
+    "dev": "tsc --watch",
+    "format": "prettier credentials nodes --write",
+    "lint": "eslint \"credentials/**/*.ts\" \"nodes/**/*.ts\" package.json",
+    "lintfix": "eslint \"credentials/**/*.ts\" \"nodes/**/*.ts\" package.json --fix",
+    "prepublishOnly": "npm run build && npm run lint"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/FeishuNodeCredentialsApi.credentials.js",
+      "dist/credentials/FeishuNodeOauth2Api.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/FeishuNode/FeishuNode.node.js",
+      "dist/nodes/FeishuNode/FeishuNodeTrigger.node.js",
+      "dist/nodes/FeishuNode/RespondToFeishu.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@n8n/node-cli": "*",
+    "@types/node": "^20.0.0",
+    "@types/ws": "^8.5.13",
+    "eslint": "9.32.0",
+    "form-data": "^4.0.1",
+    "glob": "^10.4.5",
+    "gulp": "^5.0.0",
+    "prettier": "3.6.2",
+    "release-it": "^19.0.4",
+    "require-glob": "^4.1.0",
+    "typescript": "5.9.2"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "protobufjs": "^7.5.3"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
 }
