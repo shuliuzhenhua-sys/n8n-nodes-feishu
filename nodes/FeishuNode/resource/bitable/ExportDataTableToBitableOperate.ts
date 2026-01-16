@@ -1,4 +1,4 @@
-import {IDataObject, IExecuteFunctions, INodeProperties} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestOptions } from 'n8n-workflow';
 import { ResourceOperations } from '../../../help/type/IResource';
 import RequestUtils from '../../../help/utils/RequestUtils';
 
@@ -50,7 +50,7 @@ const ExportDataTableToBitableOperate: ResourceOperations = {
 							name: 'field',
 							type: 'string',
 							default: '',
-							requiresDataPath: 'single'
+							requiresDataPath: 'single',
 						},
 						{
 							displayName: '飞书字段名称',
@@ -64,13 +64,62 @@ const ExportDataTableToBitableOperate: ResourceOperations = {
 			displayOptions: {
 				show: {
 					autoMapping: [false],
-				}
-			}
+				},
+			},
 		},
-		{ displayName: 'Options', name: 'options', type: 'collection', placeholder: 'Add option', default: {}, options: [{ displayName: 'Batching', name: 'batching', placeholder: 'Add Batching', type: 'fixedCollection', typeOptions: { multipleValues: false }, default: { batch: {} }, options: [{ displayName: 'Batching', name: 'batch', values: [{ displayName: 'Items per Batch', name: 'batchSize', type: 'number', typeOptions: { minValue: 1 }, default: 50, description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。' }, { displayName: 'Batch Interval (Ms)', name: 'batchInterval', type: 'number', typeOptions: { minValue: 0 }, default: 1000, description: '每批请求之间的时间（毫秒）。0 表示禁用。' }] }] }, { displayName: 'Timeout', name: 'timeout', type: 'number', typeOptions: { minValue: 0 }, default: 0, description: '等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。' }] },
+		{
+			displayName: 'Options',
+			name: 'options',
+			type: 'collection',
+			placeholder: 'Add option',
+			default: {},
+			options: [
+				{
+					displayName: 'Batching',
+					name: 'batching',
+					placeholder: 'Add Batching',
+					type: 'fixedCollection',
+					typeOptions: { multipleValues: false },
+					default: { batch: {} },
+					options: [
+						{
+							displayName: 'Batching',
+							name: 'batch',
+							values: [
+								{
+									displayName: 'Items per Batch',
+									name: 'batchSize',
+									type: 'number',
+									typeOptions: { minValue: 1 },
+									default: 50,
+									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
+								},
+								{
+									displayName: 'Batch Interval (Ms)',
+									name: 'batchInterval',
+									type: 'number',
+									typeOptions: { minValue: 0 },
+									default: 1000,
+									description: '每批请求之间的时间（毫秒）。0 表示禁用。',
+								},
+							],
+						},
+					],
+				},
+				{
+					displayName: 'Timeout',
+					name: 'timeout',
+					type: 'number',
+					typeOptions: { minValue: 0 },
+					default: 0,
+					description:
+						'等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。',
+				},
+			],
+		},
 	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
-		const items = this.getInputData()
+		const items = this.getInputData();
 		const rows = items.map((item) => item.json);
 		const app_token = this.getNodeParameter('app_toke', index) as string;
 		const table_id = this.getNodeParameter('table_id', index) as string;
@@ -79,42 +128,46 @@ const ExportDataTableToBitableOperate: ResourceOperations = {
 		if (rows.length === 0) return {};
 
 		let autoMapping = this.getNodeParameter('autoMapping', index) as boolean;
-		let fieldMapping = {}
-		if (!autoMapping){
+		let fieldMapping = {};
+		if (!autoMapping) {
 			let fieldOptions = this.getNodeParameter('fields', index) as IDataObject;
 			let fieldMappingList = fieldOptions.values as IDataObject[];
 			for (let fieldMappingItem of fieldMappingList) {
 				// @ts-ignore
 				fieldMapping[fieldMappingItem.field] = fieldMappingItem.feishuField;
 			}
-		}else{
+		} else {
 			Object.keys(rows[0]).forEach((key) => {
 				// @ts-ignore
 				fieldMapping[key] = key;
-			})
+			});
 		}
 
-
-		let records = []
+		let records = [];
 		for (const row of rows) {
-			let fields = {}
+			let fields = {};
 			for (const field of Object.keys(fieldMapping)) {
 				// @ts-ignore
-				fields[fieldMapping[field]] = row[field]
+				fields[fieldMapping[field]] = row[field];
 			}
 			records.push({
-				fields: fields
-			})
+				fields: fields,
+			});
 		}
 
-		const qs : any = {}
+		const qs: any = {};
 		const body = {
-			"records": records
-		}
+			records: records,
+		};
 		const options = this.getNodeParameter('options', index, {}) as {
-		timeout?: number;
-	};
-		const requestOptions: IDataObject = { method: 'POST', url: `/open-apis/bitable/v1/apps/${app_token}/tables/${table_id}/records/batch_create`, qs, body };
+			timeout?: number;
+		};
+		const requestOptions: IHttpRequestOptions = {
+			method: 'POST',
+			url: `/open-apis/bitable/v1/apps/${app_token}/tables/${table_id}/records/batch_create`,
+			qs,
+			body,
+		};
 		if (options.timeout) requestOptions.timeout = options.timeout;
 
 		return RequestUtils.request.call(this, requestOptions);

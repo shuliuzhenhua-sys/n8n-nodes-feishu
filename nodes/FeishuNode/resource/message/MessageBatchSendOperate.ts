@@ -93,9 +93,7 @@ const MessageBatchSendOperate: ResourceOperations = {
 			required: true,
 			default: JSON.stringify(
 				{
-					elements: [
-						{ tag: 'div', text: { content: 'This is the content', tag: 'plain_text' } },
-					],
+					elements: [{ tag: 'div', text: { content: 'This is the content', tag: 'plain_text' } }],
 					header: {
 						template: 'blue',
 						title: { content: 'This is the title', tag: 'plain_text' },

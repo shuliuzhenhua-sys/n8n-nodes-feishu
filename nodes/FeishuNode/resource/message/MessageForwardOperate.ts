@@ -1,8 +1,4 @@
-import {
-	IDataObject,
-	IExecuteFunctions,
-	INodeProperties,
-} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestOptions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 
@@ -101,8 +97,7 @@ const MessageForwardOperate: ResourceOperations = {
 										minValue: 1,
 									},
 									default: 50,
-									description:
-										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
+									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -138,21 +133,21 @@ const MessageForwardOperate: ResourceOperations = {
 		const receive_id = this.getNodeParameter('receive_id', index) as string;
 		const uuid = this.getNodeParameter('uuid', index) as string;
 		const options = this.getNodeParameter('options', index, {}) as {
-		timeout?: number;
-	};
+			timeout?: number;
+		};
 		const body: IDataObject = {
 			receive_id,
 		};
 
-		const qs : IDataObject = {
-			receive_id_type
-		}
+		const qs: IDataObject = {
+			receive_id_type,
+		};
 		if (uuid) {
 			qs.uuid = uuid;
 		}
 
 		// 构建请求选项
-		const requestOptions: IDataObject = {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'POST',
 			url: `/open-apis/im/v1/messages/${message_id}/forward`,
 			qs,

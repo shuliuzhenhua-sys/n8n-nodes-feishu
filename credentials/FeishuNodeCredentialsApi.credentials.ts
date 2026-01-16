@@ -85,7 +85,6 @@ export class FeishuNodeCredentialsApi implements ICredentialType {
 	];
 
 	async preAuthentication(this: IHttpRequestHelper, credentials: ICredentialDataDecryptedObject) {
-
 		const res = (await this.helpers.httpRequest({
 			method: 'POST',
 			baseURL: credentials.baseURL as string,

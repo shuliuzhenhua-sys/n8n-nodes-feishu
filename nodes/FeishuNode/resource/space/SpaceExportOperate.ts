@@ -6,7 +6,7 @@ import {
 	sleep,
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
-import { ResourceOperations } from '../../../help/type/IResource';
+import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
 
 // 导出任务状态枚举
 const JOB_STATUS = {
@@ -243,7 +243,7 @@ const SpaceExportOperate: ResourceOperations = {
 			throw new NodeOperationError(this.getNode(), '导出任务完成但未返回 file_token');
 		}
 
-		const response = await RequestUtils.originRequest.call(this, {
+		const response = (await RequestUtils.originRequest.call(this, {
 			method: 'GET',
 			url: `/open-apis/drive/v1/export_tasks/file/${fileToken}/download`,
 			json: false,
@@ -252,7 +252,7 @@ const SpaceExportOperate: ResourceOperations = {
 			headers: {
 				'Content-Type': 'application/json; charset=utf-8',
 			},
-		}) as { body: Buffer; headers: Record<string, string> };
+		} as IExtendedHttpRequestOptions)) as { body: Buffer; headers: Record<string, string> };
 
 		// 获取 MIME 类型映射
 		const mimeTypes: Record<string, string> = {
@@ -263,21 +263,21 @@ const SpaceExportOperate: ResourceOperations = {
 		};
 
 		// 优先使用响应头的 content-type，否则根据扩展名确定
-		const fileExtension = exportResult.file_extension as string || file_extension;
+		const fileExtension = (exportResult.file_extension as string) || file_extension;
 		const contentType =
-			response.headers?.['content-type'] ||
-			mimeTypes[fileExtension] ||
-			'application/octet-stream';
+			response.headers?.['content-type'] || mimeTypes[fileExtension] || 'application/octet-stream';
 
 		// 构建文件名：优先使用导出结果中的文件名
-		const baseName = exportResult.file_name as string || 'exported_file';
+		const baseName = (exportResult.file_name as string) || 'exported_file';
 		let fullFileName = `${baseName}.${fileExtension}`;
 
 		// 尝试从 Content-Disposition 获取文件名
 		const contentDisposition = response.headers?.['content-disposition'];
 		if (contentDisposition) {
 			// 优先匹配 RFC 5987 格式: filename*=UTF-8''encoded_filename
-			const rfc5987Match = contentDisposition.match(/filename\*\s*=\s*(?:UTF-8|utf-8)'[^']*'([^;\s]+)/i);
+			const rfc5987Match = contentDisposition.match(
+				/filename\*\s*=\s*(?:UTF-8|utf-8)'[^']*'([^;\s]+)/i,
+			);
 			if (rfc5987Match && rfc5987Match[1]) {
 				try {
 					fullFileName = decodeURIComponent(rfc5987Match[1]);
@@ -295,7 +295,9 @@ const SpaceExportOperate: ResourceOperations = {
 					} catch {
 						// 尝试将 Latin-1 编码的字节转换为 UTF-8
 						try {
-							const bytes = new Uint8Array(headerFileName.split('').map((c: string) => c.charCodeAt(0)));
+							const bytes = new Uint8Array(
+								headerFileName.split('').map((c: string) => c.charCodeAt(0)),
+							);
 							headerFileName = new TextDecoder('utf-8').decode(bytes);
 						} catch {
 							// 解码失败时保持原样
@@ -339,4 +341,3 @@ const SpaceExportOperate: ResourceOperations = {
 };
 
 export default SpaceExportOperate;
-

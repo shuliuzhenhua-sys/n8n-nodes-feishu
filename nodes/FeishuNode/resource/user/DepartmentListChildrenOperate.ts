@@ -3,6 +3,7 @@ import {
 	IExecuteFunctions,
 	INodeProperties,
 	IHttpRequestMethods,
+	IHttpRequestOptions,
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
@@ -17,7 +18,8 @@ const DepartmentListChildrenOperate: ResourceOperations = {
 			type: 'string',
 			required: true,
 			default: '0',
-			description: '部门 ID。ID 类型需要与查询参数 department_id_type 的取值保持一致。根部门的部门 ID 为 0。',
+			description:
+				'部门 ID。ID 类型需要与查询参数 department_id_type 的取值保持一致。根部门的部门 ID 为 0。',
 		},
 		{
 			displayName: '用户 ID 类型',
@@ -46,7 +48,8 @@ const DepartmentListChildrenOperate: ResourceOperations = {
 			name: 'fetch_child',
 			type: 'boolean',
 			default: false,
-			description: 'Whether to recursively get child departments. When true, the API will recursively query all levels of child departments.',
+			description:
+				'Whether to recursively get child departments. When true, the API will recursively query all levels of child departments.',
 		},
 		{
 			displayName: '数据结构',
@@ -118,8 +121,7 @@ const DepartmentListChildrenOperate: ResourceOperations = {
 										minValue: 1,
 									},
 									default: 50,
-									description:
-										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
+									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -152,7 +154,11 @@ const DepartmentListChildrenOperate: ResourceOperations = {
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject[]> {
 		const department_id = this.getNodeParameter('department_id', index) as string;
 		const user_id_type = this.getNodeParameter('user_id_type', index, 'open_id') as string;
-		const department_id_type = this.getNodeParameter('department_id_type', index, 'open_department_id') as string;
+		const department_id_type = this.getNodeParameter(
+			'department_id_type',
+			index,
+			'open_department_id',
+		) as string;
 		const fetch_child = this.getNodeParameter('fetch_child', index, false) as boolean;
 		const returnAll = this.getNodeParameter('returnAll', index, false) as boolean;
 		const limit = this.getNodeParameter('limit', index, 50) as number;
@@ -173,7 +179,7 @@ const DepartmentListChildrenOperate: ResourceOperations = {
 				qs.page_token = pageToken;
 			}
 
-			const requestOptions: IDataObject = {
+			const requestOptions: IHttpRequestOptions = {
 				method: 'GET' as IHttpRequestMethods,
 				url: `/open-apis/contact/v3/departments/${department_id}/children`,
 				qs,

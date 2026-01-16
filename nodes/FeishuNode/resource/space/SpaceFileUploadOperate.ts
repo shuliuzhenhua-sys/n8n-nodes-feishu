@@ -1,6 +1,6 @@
 import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
-import { ResourceOperations } from '../../../help/type/IResource';
+import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
 
 const SpaceFileUploadOperate: ResourceOperations = {
@@ -36,7 +36,8 @@ const SpaceFileUploadOperate: ResourceOperations = {
 					name: 'file_name',
 					type: 'string',
 					default: '',
-					description: '自定义文件名，例如：demo.pdf。留空则从二进制数据中自动获取。最大长度250字符',
+					description:
+						'自定义文件名，例如：demo.pdf。留空则从二进制数据中自动获取。最大长度250字符',
 				},
 				{
 					displayName: '文件校验和',
@@ -71,13 +72,19 @@ const SpaceFileUploadOperate: ResourceOperations = {
 		const file = (await NodeUtils.buildUploadFileData.call(this, fileFieldName, index)) as any;
 
 		if (!file || !file.value) {
-			throw new NodeOperationError(this.getNode(), '未找到文件数据，请检查二进制文件字段名是否正确');
+			throw new NodeOperationError(
+				this.getNode(),
+				'未找到文件数据，请检查二进制文件字段名是否正确',
+			);
 		}
 
 		// 优先使用用户定义的文件名，否则从二进制数据中获取
 		const file_name = options.file_name || file.options?.filename;
 		if (!file_name) {
-			throw new NodeOperationError(this.getNode(), '文件名不能为空，请在选项中指定文件名或确保二进制数据包含文件名');
+			throw new NodeOperationError(
+				this.getNode(),
+				'文件名不能为空，请在选项中指定文件名或确保二进制数据包含文件名',
+			);
 		}
 
 		if (file_name.length > 250) {
@@ -86,7 +93,10 @@ const SpaceFileUploadOperate: ResourceOperations = {
 
 		const fileSize = file.value.length;
 		if (fileSize > 20971520) {
-			throw new NodeOperationError(this.getNode(), '文件大小不能超过20MB，如需上传更大文件请使用分片上传接口');
+			throw new NodeOperationError(
+				this.getNode(),
+				'文件大小不能超过20MB，如需上传更大文件请使用分片上传接口',
+			);
 		}
 
 		const formData: IDataObject = {
@@ -102,20 +112,13 @@ const SpaceFileUploadOperate: ResourceOperations = {
 			formData.checksum = options.checksum;
 		}
 
-		// 构建请求选项
-		const requestOptions: IDataObject = {};
-		if (options.timeout) {
-			requestOptions.timeout = options.timeout;
-		}
-
 		return RequestUtils.request.call(this, {
 			method: 'POST',
 			url: '/open-apis/drive/v1/files/upload_all',
 			formData,
-			...requestOptions,
-		});
+			timeout: options.timeout,
+		} as IExtendedHttpRequestOptions);
 	},
 };
 
 export default SpaceFileUploadOperate;
-

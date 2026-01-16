@@ -1,8 +1,4 @@
-import {
-	IDataObject,
-	IExecuteFunctions,
-	INodeProperties,
-} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestOptions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 
@@ -42,8 +38,7 @@ const SpaceUnsubscribeOperate: ResourceOperations = {
 			name: 'event_type',
 			type: 'string',
 			default: 'file.created_in_folder_v1',
-			description:
-				'事件类型。file_type 为 folder（文件夹）时必填 file.created_in_folder_v1。',
+			description: '事件类型。file_type 为 folder（文件夹）时必填 file.created_in_folder_v1。',
 			displayOptions: {
 				show: {
 					file_type: ['folder'],
@@ -81,8 +76,7 @@ const SpaceUnsubscribeOperate: ResourceOperations = {
 										minValue: 1,
 									},
 									default: 50,
-									description:
-										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
+									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -130,7 +124,7 @@ const SpaceUnsubscribeOperate: ResourceOperations = {
 		}
 
 		// 构建请求选项
-		const requestOptions: IDataObject = {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'DELETE',
 			url: `/open-apis/drive/v1/files/${file_token}/delete_subscribe`,
 			qs: qs,
@@ -146,4 +140,3 @@ const SpaceUnsubscribeOperate: ResourceOperations = {
 };
 
 export default SpaceUnsubscribeOperate;
-

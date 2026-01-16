@@ -1,4 +1,4 @@
-import {ResourceOptions} from "../../help/type/IResource";
+import { ResourceOptions } from '../../help/type/IResource';
 
 const SpaceResource: ResourceOptions = {
 	name: '云空间',

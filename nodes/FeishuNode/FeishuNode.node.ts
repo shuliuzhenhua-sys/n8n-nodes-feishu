@@ -391,10 +391,7 @@ export class FeishuNode implements INodeType {
 		const callFunc = resourceBuilder.getCall(resource, operation);
 
 		if (!callFunc) {
-			throw new NodeOperationError(
-				this.getNode(),
-				`未实现方法: ${resource}.${operation}`,
-			);
+			throw new NodeOperationError(this.getNode(), `未实现方法: ${resource}.${operation}`);
 		}
 
 		// 获取批次配置

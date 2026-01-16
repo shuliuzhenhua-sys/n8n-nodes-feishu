@@ -101,7 +101,8 @@ export const triggerEventProperty: INodeProperties = {
 		{
 			name: '员工入职',
 			value: 'contact.user.created_v3',
-			description: '如果有新员工入职（例如，通过管理后台添加成员、调用创建用户 API），则会触发该事件',
+			description:
+				'如果有新员工入职（例如，通过管理后台添加成员、调用创建用户 API），则会触发该事件',
 		},
 		{
 			name: '员工离职',

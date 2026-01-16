@@ -1,9 +1,4 @@
-import {
-	IDataObject,
-	IExecuteFunctions,
-	INodeProperties,
-	IHttpRequestMethods,
-} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestMethods } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 
@@ -17,7 +12,8 @@ const ChatListMembersOperate: ResourceOperations = {
 			type: 'string',
 			required: true,
 			default: '',
-			description: '群 ID。获取方式：创建群，从返回结果中获取该群的 chat_id；调用获取用户或机器人所在的群列表接口，可以查询用户或机器人所在群的 chat_id；调用搜索对用户或机器人可见的群列表，可搜索用户或机器人所在的群、对用户或机器人公开的群的 chat_id。',
+			description:
+				'群 ID。获取方式：创建群，从返回结果中获取该群的 chat_id；调用获取用户或机器人所在的群列表接口，可以查询用户或机器人所在群的 chat_id；调用搜索对用户或机器人可见的群列表，可搜索用户或机器人所在的群、对用户或机器人公开的群的 chat_id。',
 		},
 		{
 			displayName: '成员 ID 类型',
@@ -121,4 +117,3 @@ const ChatListMembersOperate: ResourceOperations = {
 };
 
 export default ChatListMembersOperate;
-

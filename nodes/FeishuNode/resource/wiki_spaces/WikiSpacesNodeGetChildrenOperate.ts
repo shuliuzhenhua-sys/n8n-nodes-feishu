@@ -3,6 +3,7 @@ import {
 	IExecuteFunctions,
 	INodeProperties,
 	IHttpRequestMethods,
+	IHttpRequestOptions,
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
@@ -95,7 +96,10 @@ const WikiSpacesNodeGetChildrenOperate: ResourceOperations = {
 		const parentNodeToken = this.getNodeParameter('parent_node_token', index) as string;
 
 		// 获取节点列表的请求函数
-		const fetchChildren = async (targetSpaceId: string, targetParentNodeToken: string | undefined) => {
+		const fetchChildren = async (
+			targetSpaceId: string,
+			targetParentNodeToken: string | undefined,
+		) => {
 			let allItems: IDataObject[] = [];
 			let pageToken: string | undefined = undefined;
 
@@ -112,7 +116,7 @@ const WikiSpacesNodeGetChildrenOperate: ResourceOperations = {
 					qs.page_token = pageToken;
 				}
 
-				const requestOptions: IDataObject = {
+				const requestOptions: IHttpRequestOptions = {
 					method: 'GET' as IHttpRequestMethods,
 					url: `/open-apis/wiki/v2/spaces/${targetSpaceId}/nodes`,
 					qs,
@@ -152,7 +156,7 @@ const WikiSpacesNodeGetChildrenOperate: ResourceOperations = {
 				qs.page_token = pageToken;
 			}
 
-			const requestOptions: IDataObject = {
+			const requestOptions: IHttpRequestOptions = {
 				method: 'GET' as IHttpRequestMethods,
 				url: `/open-apis/wiki/v2/spaces/${spaceId}/nodes`,
 				qs,
@@ -199,7 +203,13 @@ const WikiSpacesNodeGetChildrenOperate: ResourceOperations = {
 							item.space_id as string,
 							item.node_token as string,
 						);
-						const childResults = await fetchRecursive(children, itemPath, currentDepth + 1, recursiveDepth, dataStructure);
+						const childResults = await fetchRecursive(
+							children,
+							itemPath,
+							currentDepth + 1,
+							recursiveDepth,
+							dataStructure,
+						);
 						itemWithPath.children = childResults;
 					} else {
 						itemWithPath.children = [];
@@ -214,7 +224,13 @@ const WikiSpacesNodeGetChildrenOperate: ResourceOperations = {
 							item.space_id as string,
 							item.node_token as string,
 						);
-						const childResults = await fetchRecursive(children, itemPath, currentDepth + 1, recursiveDepth, dataStructure);
+						const childResults = await fetchRecursive(
+							children,
+							itemPath,
+							currentDepth + 1,
+							recursiveDepth,
+							dataStructure,
+						);
 						results.push(...childResults);
 					}
 				}
@@ -230,7 +246,7 @@ const WikiSpacesNodeGetChildrenOperate: ResourceOperations = {
 
 			if (!recursive) {
 				// 非递归模式，直接返回并添加 breadcrumbItems
-				return initialItems.map(item => ({
+				return initialItems.map((item) => ({
 					...item,
 					breadcrumbItems: [item.title as string],
 				}));
@@ -246,7 +262,7 @@ const WikiSpacesNodeGetChildrenOperate: ResourceOperations = {
 			const { items } = await fetchPage(undefined, limit);
 
 			if (!recursive) {
-				return items.map(item => ({
+				return items.map((item) => ({
 					...item,
 					breadcrumbItems: [item.title as string],
 				}));

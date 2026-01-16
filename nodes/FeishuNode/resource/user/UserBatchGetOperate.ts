@@ -1,10 +1,6 @@
-import {
-	IDataObject,
-	IExecuteFunctions,
-	INodeProperties,
-} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
-import { ResourceOperations } from '../../../help/type/IResource';
+import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
 
 const UserBatchGetOperate: ResourceOperations = {
 	name: '批量获取用户信息',
@@ -16,7 +12,8 @@ const UserBatchGetOperate: ResourceOperations = {
 			type: 'string',
 			required: true,
 			default: '',
-			description: '用户ID列表，支持两种格式：1) 逗号分隔的字符串，如 "id1,id2,id3"；2) JSON数组，如 ["id1","id2","id3"]。单次请求最多50个用户ID。',
+			description:
+				'用户ID列表，支持两种格式：1) 逗号分隔的字符串，如 "id1,id2,id3"；2) JSON数组，如 ["id1","id2","id3"]。单次请求最多50个用户ID。',
 		},
 		{
 			displayName: '用户ID类型',
@@ -92,8 +89,7 @@ const UserBatchGetOperate: ResourceOperations = {
 										minValue: 1,
 									},
 									default: 50,
-									description:
-										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
+									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -128,8 +124,8 @@ const UserBatchGetOperate: ResourceOperations = {
 		const user_id_type = this.getNodeParameter('user_id_type', index) as string;
 		const department_id_type = this.getNodeParameter('department_id_type', index) as string;
 		const options = this.getNodeParameter('options', index, {}) as {
-		timeout?: number;
-	};
+			timeout?: number;
+		};
 
 		// 解析用户ID列表，支持 JSON 数组和逗号分隔字符串两种格式
 		let user_ids: string[];
@@ -152,7 +148,10 @@ const UserBatchGetOperate: ResourceOperations = {
 				}
 			} else {
 				// 逗号分隔格式
-				user_ids = user_ids_str.split(',').map((id) => id.trim()).filter((id) => id);
+				user_ids = user_ids_str
+					.split(',')
+					.map((id) => id.trim())
+					.filter((id) => id);
 			}
 		}
 
@@ -171,7 +170,7 @@ const UserBatchGetOperate: ResourceOperations = {
 		};
 
 		// 构建请求选项
-		const requestOptions: IDataObject = {
+		const requestOptions: IExtendedHttpRequestOptions = {
 			method: 'GET',
 			url: '/open-apis/contact/v3/users/batch',
 			qs,

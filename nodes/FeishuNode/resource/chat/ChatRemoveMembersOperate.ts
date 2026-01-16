@@ -3,6 +3,7 @@ import {
 	IExecuteFunctions,
 	INodeProperties,
 	IHttpRequestMethods,
+	IHttpRequestOptions,
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
@@ -17,7 +18,8 @@ const ChatRemoveMembersOperate: ResourceOperations = {
 			type: 'string',
 			required: true,
 			default: '',
-			description: '群 ID。获取方式：创建群，从返回结果中获取该群的 chat_id；调用获取用户或机器人所在的群列表接口，可以查询用户或机器人所在群的 chat_id；调用搜索对用户或机器人可见的群列表，可搜索用户或机器人所在的群、对用户或机器人公开的群的 chat_id。注意：仅支持群模式为群组（group）、话题（topic）的群组 ID。',
+			description:
+				'群 ID。获取方式：创建群，从返回结果中获取该群的 chat_id；调用获取用户或机器人所在的群列表接口，可以查询用户或机器人所在群的 chat_id；调用搜索对用户或机器人可见的群列表，可搜索用户或机器人所在的群、对用户或机器人公开的群的 chat_id。注意：仅支持群模式为群组（group）、话题（topic）的群组 ID。',
 		},
 		{
 			displayName: '成员 ID 类型',
@@ -38,7 +40,8 @@ const ChatRemoveMembersOperate: ResourceOperations = {
 			type: 'string',
 			required: true,
 			default: '',
-			description: '成员 ID 列表，支持逗号分隔的字符串或通过表达式传入数组。ID 类型与查询参数 member_id_type 的取值一致。移除群内的用户时推荐使用 OpenID；移除群内的机器人时需填写应用的 App ID。注意：成员列表不可为空，每次请求最多移除 50 个用户或者 5 个机器人。',
+			description:
+				'成员 ID 列表，支持逗号分隔的字符串或通过表达式传入数组。ID 类型与查询参数 member_id_type 的取值一致。移除群内的用户时推荐使用 OpenID；移除群内的机器人时需填写应用的 App ID。注意：成员列表不可为空，每次请求最多移除 50 个用户或者 5 个机器人。',
 		},
 		{
 			displayName: 'Options',
@@ -71,8 +74,7 @@ const ChatRemoveMembersOperate: ResourceOperations = {
 										minValue: 1,
 									},
 									default: 50,
-									description:
-										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
+									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -107,8 +109,8 @@ const ChatRemoveMembersOperate: ResourceOperations = {
 		const member_id_type = this.getNodeParameter('member_id_type', index, 'open_id') as string;
 		const id_list_raw = this.getNodeParameter('id_list', index) as string | string[];
 		const options = this.getNodeParameter('options', index, {}) as {
-		timeout?: number;
-	};
+			timeout?: number;
+		};
 
 		// 解析成员 ID 列表（支持字符串或数组）
 		let id_list: string[];
@@ -129,7 +131,7 @@ const ChatRemoveMembersOperate: ResourceOperations = {
 			id_list,
 		};
 		// 构建请求选项
-		const requestOptions: IDataObject = {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'DELETE' as IHttpRequestMethods,
 			url: `/open-apis/im/v1/chats/${chat_id}/members`,
 			qs,
@@ -146,4 +148,3 @@ const ChatRemoveMembersOperate: ResourceOperations = {
 };
 
 export default ChatRemoveMembersOperate;
-

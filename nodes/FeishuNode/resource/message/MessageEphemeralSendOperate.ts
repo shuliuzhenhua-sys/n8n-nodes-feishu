@@ -1,8 +1,4 @@
-import {
-	IDataObject,
-	IExecuteFunctions,
-	INodeProperties,
-} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestOptions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 
@@ -59,7 +55,14 @@ const MessageEphemeralSendOperate: ResourceOperations = {
 			displayName: '卡片内容',
 			name: 'card',
 			type: 'json',
-			default: JSON.stringify({ elements: [{ tag: 'div', text: { content: 'This is the content', tag: 'plain_text' } }], header: { template: 'blue', title: { content: 'This is the title', tag: 'plain_text' } } }, null, 2),
+			default: JSON.stringify(
+				{
+					elements: [{ tag: 'div', text: { content: 'This is the content', tag: 'plain_text' } }],
+					header: { template: 'blue', title: { content: 'This is the title', tag: 'plain_text' } },
+				},
+				null,
+				2,
+			),
 			description:
 				'消息卡片的内容。支持卡片 JSON 或搭建工具构建的卡片模板。要使用卡片 JSON，参考卡片 JSON 结构。',
 			required: true,
@@ -95,8 +98,7 @@ const MessageEphemeralSendOperate: ResourceOperations = {
 										minValue: 1,
 									},
 									default: 50,
-									description:
-										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
+									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -132,8 +134,8 @@ const MessageEphemeralSendOperate: ResourceOperations = {
 		const user_id_value = this.getNodeParameter('user_id_value', index) as string;
 		const card = this.getNodeParameter('card', index) as object;
 		const options = this.getNodeParameter('options', index, {}) as {
-		timeout?: number;
-	};
+			timeout?: number;
+		};
 		const body: IDataObject = {
 			chat_id,
 			msg_type: 'interactive',
@@ -144,7 +146,7 @@ const MessageEphemeralSendOperate: ResourceOperations = {
 		body[user_id_type] = user_id_value;
 
 		// 构建请求选项
-		const requestOptions: IDataObject = {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'POST',
 			url: `/open-apis/ephemeral/v1/send`,
 			body,

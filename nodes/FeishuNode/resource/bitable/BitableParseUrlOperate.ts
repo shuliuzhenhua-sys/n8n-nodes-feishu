@@ -1,10 +1,6 @@
-import {
-	IDataObject,
-	IExecuteFunctions,
-	INodeProperties,
-} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties } from 'n8n-workflow';
 import { ResourceOperations } from '../../../help/type/IResource';
-import RequestUtils from "../../../help/utils/RequestUtils";
+import RequestUtils from '../../../help/utils/RequestUtils';
 
 const BitableParseUrlOperate: ResourceOperations = {
 	name: '解析多维表格地址',
@@ -37,13 +33,35 @@ const BitableParseUrlOperate: ResourceOperations = {
 							displayName: 'Batching',
 							name: 'batch',
 							values: [
-								{ displayName: 'Items per Batch', name: 'batchSize', type: 'number', typeOptions: { minValue: 1 }, default: 50, description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。' },
-								{ displayName: 'Batch Interval (Ms)', name: 'batchInterval', type: 'number', typeOptions: { minValue: 0 }, default: 1000, description: '每批请求之间的时间（毫秒）。0 表示禁用。' },
+								{
+									displayName: 'Items per Batch',
+									name: 'batchSize',
+									type: 'number',
+									typeOptions: { minValue: 1 },
+									default: 50,
+									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
+								},
+								{
+									displayName: 'Batch Interval (Ms)',
+									name: 'batchInterval',
+									type: 'number',
+									typeOptions: { minValue: 0 },
+									default: 1000,
+									description: '每批请求之间的时间（毫秒）。0 表示禁用。',
+								},
 							],
 						},
 					],
 				},
-				{ displayName: 'Timeout', name: 'timeout', type: 'number', typeOptions: { minValue: 0 }, default: 0, description: '等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。' },
+				{
+					displayName: 'Timeout',
+					name: 'timeout',
+					type: 'number',
+					typeOptions: { minValue: 0 },
+					default: 0,
+					description:
+						'等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。',
+				},
 			],
 		},
 	] as INodeProperties[],
@@ -52,25 +70,25 @@ const BitableParseUrlOperate: ResourceOperations = {
 		let data: IDataObject = {
 			app_token: null,
 			table_id: null,
-			view_id: null
+			view_id: null,
 		};
 		let matches = url.match(/\/base\/(.*?)(\?|$)/);
 		if (matches) {
 			data.app_token = matches[1];
-		}else {
+		} else {
 			matches = url.match(/\/wiki\/(.*?)(\?|$)/);
 			if (matches) {
 				let wikiToken = matches[1];
 				// wiki 开头需要处理
-			const res = await RequestUtils.request.call(this, {
-				method: 'GET',
-				url: '/open-apis/wiki/v2/spaces/get_node',
-				qs: {
-					token: wikiToken,
-					obj_type: 'wiki'
-				},
-			}) as { node?: { obj_token?: string } };
-			data.app_token = res?.node?.obj_token
+				const res = (await RequestUtils.request.call(this, {
+					method: 'GET',
+					url: '/open-apis/wiki/v2/spaces/get_node',
+					qs: {
+						token: wikiToken,
+						obj_type: 'wiki',
+					},
+				})) as { node?: { obj_token?: string } };
+				data.app_token = res?.node?.obj_token;
 			}
 		}
 		matches = url.match(/table=(.*?)(&|$)/);

@@ -1,13 +1,9 @@
-import {
-	IDataObject,
-	IExecuteFunctions,
-	INodeProperties,
-} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestOptions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
-import NodeUtils from "../../../help/utils/NodeUtils";
+import NodeUtils from '../../../help/utils/NodeUtils';
 
-export default  {
+export default {
 	name: '新增记录',
 	value: 'bitable:table:record:add',
 	order: 70,
@@ -46,7 +42,8 @@ export default  {
 			name: 'client_toke',
 			type: 'string',
 			default: '',
-			description: '操作的唯一标识，与接口返回值的 client_token 相对应，用于幂等的进行更新操作。此值为空表示将发起一次新的请求，此值非空表示幂等的进行更新操作',
+			description:
+				'操作的唯一标识，与接口返回值的 client_token 相对应，用于幂等的进行更新操作。此值为空表示将发起一次新的请求，此值非空表示幂等的进行更新操作',
 		},
 		{
 			displayName: '是否忽略一致性读写检查',
@@ -71,8 +68,47 @@ export default  {
 			placeholder: 'Add option',
 			default: {},
 			options: [
-				{ displayName: 'Batching', name: 'batching', placeholder: 'Add Batching', type: 'fixedCollection', typeOptions: { multipleValues: false }, default: { batch: {} }, options: [{ displayName: 'Batching', name: 'batch', values: [{ displayName: 'Items per Batch', name: 'batchSize', type: 'number', typeOptions: { minValue: 1 }, default: 50, description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。' }, { displayName: 'Batch Interval (Ms)', name: 'batchInterval', type: 'number', typeOptions: { minValue: 0 }, default: 1000, description: '每批请求之间的时间（毫秒）。0 表示禁用。' }] }] },
-				{ displayName: 'Timeout', name: 'timeout', type: 'number', typeOptions: { minValue: 0 }, default: 0, description: '等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。' },
+				{
+					displayName: 'Batching',
+					name: 'batching',
+					placeholder: 'Add Batching',
+					type: 'fixedCollection',
+					typeOptions: { multipleValues: false },
+					default: { batch: {} },
+					options: [
+						{
+							displayName: 'Batching',
+							name: 'batch',
+							values: [
+								{
+									displayName: 'Items per Batch',
+									name: 'batchSize',
+									type: 'number',
+									typeOptions: { minValue: 1 },
+									default: 50,
+									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
+								},
+								{
+									displayName: 'Batch Interval (Ms)',
+									name: 'batchInterval',
+									type: 'number',
+									typeOptions: { minValue: 0 },
+									default: 1000,
+									description: '每批请求之间的时间（毫秒）。0 表示禁用。',
+								},
+							],
+						},
+					],
+				},
+				{
+					displayName: 'Timeout',
+					name: 'timeout',
+					type: 'number',
+					typeOptions: { minValue: 0 },
+					default: 0,
+					description:
+						'等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。',
+				},
 			],
 		},
 	] as INodeProperties[],
@@ -81,17 +117,26 @@ export default  {
 		const table_id = this.getNodeParameter('table_id', index) as string;
 		const user_id_type = this.getNodeParameter('user_id_type', index) as string;
 		const client_token = this.getNodeParameter('client_toke', index) as string;
-		const ignore_consistency_check = this.getNodeParameter('ignore_consistency_check', index, true) as boolean;
+		const ignore_consistency_check = this.getNodeParameter(
+			'ignore_consistency_check',
+			index,
+			true,
+		) as boolean;
 		const body = NodeUtils.getNodeJsonData(this, 'body', index) as IDataObject;
 		const options = this.getNodeParameter('options', index, {}) as {
-		timeout?: number;
-	};
-		const qs : any = {}
-		if (user_id_type) qs.user_id_type = user_id_type
-		if (client_token) qs.client_token = client_token
-		qs.ignore_consistency_check = ignore_consistency_check
+			timeout?: number;
+		};
+		const qs: any = {};
+		if (user_id_type) qs.user_id_type = user_id_type;
+		if (client_token) qs.client_token = client_token;
+		qs.ignore_consistency_check = ignore_consistency_check;
 
-		const requestOptions: IDataObject = { method: 'POST', url: `/open-apis/bitable/v1/apps/${app_token}/tables/${table_id}/records`, qs, body };
+		const requestOptions: IHttpRequestOptions = {
+			method: 'POST',
+			url: `/open-apis/bitable/v1/apps/${app_token}/tables/${table_id}/records`,
+			qs,
+			body,
+		};
 		if (options.timeout) requestOptions.timeout = options.timeout;
 
 		return RequestUtils.request.call(this, requestOptions);

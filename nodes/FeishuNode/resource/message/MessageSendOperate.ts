@@ -1,8 +1,4 @@
-import {
-	IDataObject,
-	IExecuteFunctions,
-	INodeProperties,
-} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestOptions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 
@@ -19,8 +15,7 @@ const MessageSendOperate: ResourceOperations = {
 				{
 					name: 'Open ID',
 					value: 'open_id',
-					description:
-						'标识一个用户在某个应用中的身份。同一个用户在不同应用中的 Open ID 不同',
+					description: '标识一个用户在某个应用中的身份。同一个用户在不同应用中的 Open ID 不同',
 				},
 				{
 					name: 'Union ID',
@@ -102,7 +97,11 @@ const MessageSendOperate: ResourceOperations = {
 			name: 'post_content',
 			type: 'json',
 			required: true,
-			default: JSON.stringify({ zh_cn: { title: '标题', content: [[{ tag: 'text', text: '文本内容' }]] } }, null, 2),
+			default: JSON.stringify(
+				{ zh_cn: { title: '标题', content: [[{ tag: 'text', text: '文本内容' }]] } },
+				null,
+				2,
+			),
 			description: '富文本消息内容，JSON 格式',
 			displayOptions: {
 				show: {
@@ -198,8 +197,14 @@ const MessageSendOperate: ResourceOperations = {
 			name: 'interactive_content',
 			type: 'json',
 			required: true,
-			default:
-				JSON.stringify({ elements: [{ tag: 'div', text: { content: 'This is the content', tag: 'plain_text' } }], header: { template: 'blue', title: { content: 'This is the title', tag: 'plain_text' } } }, null, 2),
+			default: JSON.stringify(
+				{
+					elements: [{ tag: 'div', text: { content: 'This is the content', tag: 'plain_text' } }],
+					header: { template: 'blue', title: { content: 'This is the title', tag: 'plain_text' } },
+				},
+				null,
+				2,
+			),
 			description: '卡片消息内容，JSON 格式',
 			displayOptions: {
 				show: {
@@ -287,8 +292,7 @@ const MessageSendOperate: ResourceOperations = {
 										minValue: 1,
 									},
 									default: 50,
-									description:
-										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
+									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -324,8 +328,8 @@ const MessageSendOperate: ResourceOperations = {
 		const msg_type = this.getNodeParameter('msg_type', index) as string;
 		const uuid = this.getNodeParameter('uuid', index) as string;
 		const options = this.getNodeParameter('options', index, {}) as {
-		timeout?: number;
-	};
+			timeout?: number;
+		};
 		// 根据消息类型构建 content
 		let content: string;
 		switch (msg_type) {
@@ -336,8 +340,7 @@ const MessageSendOperate: ResourceOperations = {
 			}
 			case 'post': {
 				const post_content = this.getNodeParameter('post_content', index);
-				content =
-					typeof post_content === 'string' ? post_content : JSON.stringify(post_content);
+				content = typeof post_content === 'string' ? post_content : JSON.stringify(post_content);
 				break;
 			}
 			case 'image': {
@@ -408,7 +411,7 @@ const MessageSendOperate: ResourceOperations = {
 		}
 
 		// 构建请求选项
-		const requestOptions: IDataObject = {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'POST',
 			url: '/open-apis/im/v1/messages',
 			qs: {

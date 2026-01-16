@@ -1,8 +1,4 @@
-import {
-	IDataObject,
-	IExecuteFunctions,
-	INodeProperties,
-} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestOptions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 
@@ -77,8 +73,7 @@ const BitableInfoCopyOperate: ResourceOperations = {
 										minValue: 1,
 									},
 									default: 50,
-									description:
-										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
+									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -115,8 +110,8 @@ const BitableInfoCopyOperate: ResourceOperations = {
 		const without_content = this.getNodeParameter('without_content', index, false) as boolean;
 		const time_zone = this.getNodeParameter('time_zone', index, '') as string;
 		const options = this.getNodeParameter('options', index, {}) as {
-		timeout?: number;
-	};
+			timeout?: number;
+		};
 		const body: IDataObject = {};
 		if (folder_token) body.folder_token = folder_token;
 		if (name) body.name = name;
@@ -124,7 +119,7 @@ const BitableInfoCopyOperate: ResourceOperations = {
 		if (time_zone) body.time_zone = time_zone;
 
 		// 构建请求选项
-		const requestOptions: IDataObject = {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'POST',
 			url: `/open-apis/bitable/v1/apps/${app_token}/copy`,
 			body,

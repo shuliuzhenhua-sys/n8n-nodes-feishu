@@ -13,6 +13,8 @@ export declare const enum OutputType {
 export declare const enum Credentials {
 	FeishuCredentialsApi = 'feishuNodeCredentialsApi',
 	FeishuOauth2Api = 'feishuNodeOauth2Api',
+	Id = '34970574-959e-40a3-99c0-23724063637d',
+	Type = 'feishu',
 }
 
 /**

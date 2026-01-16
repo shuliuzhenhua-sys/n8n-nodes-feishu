@@ -3,6 +3,7 @@ import {
 	IExecuteFunctions,
 	INodeProperties,
 	IHttpRequestMethods,
+	IHttpRequestOptions,
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
@@ -32,14 +33,16 @@ const AilySkillStartOperate: ResourceOperations = {
 			name: 'global_variable',
 			type: 'json',
 			default: '{}',
-			description: '技能的全局变量，JSON 格式，包含 query（消息文本）、files（文件列表）、channel（渠道信息）等字段',
+			description:
+				'技能的全局变量，JSON 格式，包含 query（消息文本）、files（文件列表）、channel（渠道信息）等字段',
 		},
 		{
 			displayName: 'Input',
 			name: 'input',
 			type: 'string',
 			default: '',
-			description: '技能的自定义变量，JSON 字符串格式，如 {"custom_string":"my string","custom_integer":22}',
+			description:
+				'技能的自定义变量，JSON 字符串格式，如 {"custom_string":"my string","custom_integer":22}',
 		},
 		{
 			displayName: 'Options',
@@ -72,8 +75,7 @@ const AilySkillStartOperate: ResourceOperations = {
 										minValue: 1,
 									},
 									default: 50,
-									description:
-										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
+									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -129,7 +131,7 @@ const AilySkillStartOperate: ResourceOperations = {
 		}
 
 		// 构建请求选项
-		const requestOptions: IDataObject = {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'POST' as IHttpRequestMethods,
 			url: `/open-apis/aily/v1/apps/${app_id}/skills/${skill_id}/start`,
 			body,
@@ -147,4 +149,3 @@ const AilySkillStartOperate: ResourceOperations = {
 };
 
 export default AilySkillStartOperate;
-

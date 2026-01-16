@@ -1,9 +1,4 @@
-import {
-	IDataObject,
-	IExecuteFunctions,
-	INodeProperties,
-	IHttpRequestMethods,
-} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestMethods } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 
@@ -16,7 +11,8 @@ const ChatSearchOperate: ResourceOperations = {
 			name: 'query',
 			type: 'string',
 			default: '',
-			description: '关键词。支持匹配群国际化名称、群成员名称，支持多语种搜索，支持拼音、前缀等模糊搜索。关键词为空值或长度超过 64 个字符时将返回空的结果。关键词中尽量不要包含 - 符号，如果必须包含该符号，请在传值时添加双引号，例如 "Example-0"。',
+			description:
+				'关键词。支持匹配群国际化名称、群成员名称，支持多语种搜索，支持拼音、前缀等模糊搜索。关键词为空值或长度超过 64 个字符时将返回空的结果。关键词中尽量不要包含 - 符号，如果必须包含该符号，请在传值时添加双引号，例如 "Example-0"。',
 		},
 		{
 			displayName: '用户ID类型',
@@ -124,4 +120,3 @@ const ChatSearchOperate: ResourceOperations = {
 };
 
 export default ChatSearchOperate;
-

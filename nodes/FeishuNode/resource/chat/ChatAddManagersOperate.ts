@@ -3,6 +3,7 @@ import {
 	IExecuteFunctions,
 	INodeProperties,
 	IHttpRequestMethods,
+	IHttpRequestOptions,
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
@@ -17,7 +18,8 @@ const ChatAddManagersOperate: ResourceOperations = {
 			type: 'string',
 			required: true,
 			default: '',
-			description: '群 ID。获取方式：创建群，从返回结果中获取该群的 chat_id；调用获取用户或机器人所在的群列表接口，可以查询用户或机器人所在群的 chat_id；调用搜索对用户或机器人可见的群列表，可搜索用户或机器人所在的群、对用户或机器人公开的群的 chat_id。注意：仅支持群模式为 群组（group）、话题（topic）的群组 ID。',
+			description:
+				'群 ID。获取方式：创建群，从返回结果中获取该群的 chat_id；调用获取用户或机器人所在的群列表接口，可以查询用户或机器人所在群的 chat_id；调用搜索对用户或机器人可见的群列表，可搜索用户或机器人所在的群、对用户或机器人公开的群的 chat_id。注意：仅支持群模式为 群组（group）、话题（topic）的群组 ID。',
 		},
 		{
 			displayName: '管理员 ID 列表',
@@ -25,7 +27,8 @@ const ChatAddManagersOperate: ResourceOperations = {
 			type: 'string',
 			required: true,
 			default: '',
-			description: '要设置为管理员的 ID 列表，支持逗号分隔的字符串或通过表达式传入数组。ID 类型与查询参数 member_id_type 取值一致。如果是用户（member_id_type 为 user_id/open_id/union_id），推荐使用用户的 open_id；如果是机器人（member_id_type 为 app_id），请使用应用的 App ID。普通群最多可指定 10 个管理员；超大群最多可指定 20 个管理员；单次请求指定机器人时，最多可指定 5 个机器人。',
+			description:
+				'要设置为管理员的 ID 列表，支持逗号分隔的字符串或通过表达式传入数组。ID 类型与查询参数 member_id_type 取值一致。如果是用户（member_id_type 为 user_id/open_id/union_id），推荐使用用户的 open_id；如果是机器人（member_id_type 为 app_id），请使用应用的 App ID。普通群最多可指定 10 个管理员；超大群最多可指定 20 个管理员；单次请求指定机器人时，最多可指定 5 个机器人。',
 		},
 		{
 			displayName: '成员 ID 类型',
@@ -71,8 +74,7 @@ const ChatAddManagersOperate: ResourceOperations = {
 										minValue: 1,
 									},
 									default: 50,
-									description:
-										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
+									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -107,8 +109,8 @@ const ChatAddManagersOperate: ResourceOperations = {
 		const manager_ids_raw = this.getNodeParameter('manager_ids', index) as string | string[];
 		const member_id_type = this.getNodeParameter('member_id_type', index, 'open_id') as string;
 		const options = this.getNodeParameter('options', index, {}) as {
-		timeout?: number;
-	};
+			timeout?: number;
+		};
 
 		// 解析管理员 ID 列表（支持字符串或数组）
 		let manager_ids: string[];
@@ -129,7 +131,7 @@ const ChatAddManagersOperate: ResourceOperations = {
 			manager_ids,
 		};
 		// 构建请求选项
-		const requestOptions: IDataObject = {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'POST' as IHttpRequestMethods,
 			url: `/open-apis/im/v1/chats/${chat_id}/managers/add_managers`,
 			qs,
@@ -146,4 +148,3 @@ const ChatAddManagersOperate: ResourceOperations = {
 };
 
 export default ChatAddManagersOperate;
-

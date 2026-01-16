@@ -3,6 +3,7 @@ import {
 	IExecuteFunctions,
 	INodeProperties,
 	IHttpRequestMethods,
+	IHttpRequestOptions,
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
@@ -50,7 +51,7 @@ const WikiSpacesGetListOperate: ResourceOperations = {
 				qs.page_token = pageToken;
 			}
 
-			const requestOptions: IDataObject = {
+			const requestOptions: IHttpRequestOptions = {
 				method: 'GET' as IHttpRequestMethods,
 				url: '/open-apis/wiki/v2/spaces',
 				qs,

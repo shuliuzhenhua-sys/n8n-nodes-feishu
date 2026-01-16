@@ -3,6 +3,7 @@ import {
 	IExecuteFunctions,
 	INodeProperties,
 	IHttpRequestMethods,
+	IHttpRequestOptions,
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
@@ -61,7 +62,7 @@ const AilyFileGetOperate: ResourceOperations = {
 		}
 
 		// 构建请求选项
-		const requestOptions: IDataObject = {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'GET' as IHttpRequestMethods,
 			url: `/open-apis/aily/v1/files/${file_id}`,
 			qs,
@@ -79,4 +80,3 @@ const AilyFileGetOperate: ResourceOperations = {
 };
 
 export default AilyFileGetOperate;
-

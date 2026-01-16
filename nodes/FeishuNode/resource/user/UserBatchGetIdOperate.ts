@@ -64,7 +64,7 @@ const UserBatchGetIdOperate: ResourceOperations = {
 			qs: {
 				user_id_type,
 			},
-			body
+			body,
 		});
 	},
 };

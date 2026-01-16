@@ -1,4 +1,10 @@
-import {IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestMethods} from 'n8n-workflow';
+import {
+	IDataObject,
+	IExecuteFunctions,
+	INodeProperties,
+	IHttpRequestMethods,
+	IHttpRequestOptions,
+} from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 
@@ -95,7 +101,9 @@ const WikiSpacesNodeCreateHierarchyOperate: ResourceOperations = {
 		}
 
 		// 获取子节点列表的函数
-		const fetchChildren = async (targetParentNodeToken: string | undefined): Promise<IDataObject[]> => {
+		const fetchChildren = async (
+			targetParentNodeToken: string | undefined,
+		): Promise<IDataObject[]> => {
 			let allItems: IDataObject[] = [];
 			let pageToken: string | undefined = undefined;
 
@@ -112,7 +120,7 @@ const WikiSpacesNodeCreateHierarchyOperate: ResourceOperations = {
 					qs.page_token = pageToken;
 				}
 
-				const requestOptions: IDataObject = {
+				const requestOptions: IHttpRequestOptions = {
 					method: 'GET' as IHttpRequestMethods,
 					url: `/open-apis/wiki/v2/spaces/${spaceId}/nodes`,
 					qs,
@@ -154,7 +162,7 @@ const WikiSpacesNodeCreateHierarchyOperate: ResourceOperations = {
 				body.parent_node_token = nodeParentToken;
 			}
 
-			const requestOptions: IDataObject = {
+			const requestOptions: IHttpRequestOptions = {
 				method: 'POST' as IHttpRequestMethods,
 				url: `/open-apis/wiki/v2/spaces/${spaceId}/nodes`,
 				body,
@@ -169,7 +177,7 @@ const WikiSpacesNodeCreateHierarchyOperate: ResourceOperations = {
 			nodeParentToken: string | undefined,
 		): Promise<IDataObject | undefined> => {
 			const children = await fetchChildren(nodeParentToken);
-			return children.find(child => child.title === title);
+			return children.find((child) => child.title === title);
 		};
 
 		// 递归创建层级
@@ -231,4 +239,3 @@ const WikiSpacesNodeCreateHierarchyOperate: ResourceOperations = {
 };
 
 export default WikiSpacesNodeCreateHierarchyOperate;
-

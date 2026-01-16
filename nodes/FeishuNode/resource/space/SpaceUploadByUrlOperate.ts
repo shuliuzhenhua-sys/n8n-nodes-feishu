@@ -1,6 +1,6 @@
 import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
-import { ResourceOperations } from '../../../help/type/IResource';
+import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
 import FormData from 'form-data';
 
 export default {
@@ -93,7 +93,7 @@ export default {
 		const url = this.getNodeParameter('url', index) as string;
 
 		const res = await this.helpers.request(url, {
-			useStream: true
+			useStream: true,
 		});
 
 		// 流转换为 buffer
@@ -108,15 +108,12 @@ export default {
 		formData.append('parent_type', parent_type);
 		formData.append('parent_node', parent_node);
 		formData.append('size', file.byteLength);
-		formData.append('file', file, { contentType: "image/png", filename:  file_name});
-
+		formData.append('file', file, { contentType: 'image/png', filename: file_name });
 
 		return RequestUtils.request.call(this, {
 			method: 'POST',
 			url: `/open-apis/drive/v1/medias/upload_all`,
 			formData: formData,
-		});
+		} as IExtendedHttpRequestOptions);
 	},
-
-
 } as ResourceOperations;

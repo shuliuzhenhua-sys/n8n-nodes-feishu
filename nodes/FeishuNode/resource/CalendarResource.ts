@@ -1,6 +1,6 @@
-import {ResourceOptions} from "../../help/type/IResource";
+import { ResourceOptions } from '../../help/type/IResource';
 
-export default{
+export default {
 	name: '日历',
 	value: 'calendar',
 } as ResourceOptions;

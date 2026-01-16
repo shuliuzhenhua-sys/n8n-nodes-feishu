@@ -38,8 +38,8 @@ export default {
 				{
 					name: 'JSON',
 					value: 'json',
-				}
-			]
+				},
+			],
 		},
 		{
 			displayName: '字段列表',
@@ -163,9 +163,9 @@ export default {
 			],
 			displayOptions: {
 				show: {
-					type: ['field']
-				}
-			}
+					type: ['field'],
+				},
+			},
 		},
 		{
 			displayName: '请求体JSON',
@@ -177,9 +177,9 @@ export default {
 				'参考：https://open.feishu.cn/document/server-docs/docs/bitable-v1/app-table-field/create#requestBody',
 			displayOptions: {
 				show: {
-					type: ['json']
-				}
-			}
+					type: ['json'],
+				},
+			},
 		},
 	],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
@@ -188,11 +188,11 @@ export default {
 
 		const type = this.getNodeParameter('type', index) as string;
 		let fieldList = [];
-		if (type === "field"){
+		if (type === 'field') {
 			const fieldObject = this.getNodeParameter('fieldObject', index) as IDataObject;
 			fieldList = NodeUtils.getNodeFixedCollection(fieldObject, 'fields');
-		}else{
-			fieldList = NodeUtils.getNodeJsonData(this, "body", index) as IDataObject[];
+		} else {
+			fieldList = NodeUtils.getNodeJsonData(this, 'body', index) as IDataObject[];
 		}
 
 		const newFieldList = [];
@@ -200,18 +200,18 @@ export default {
 			let newItem = {
 				...item,
 				...(item.data ? JSON.parse(item.data as string) : {}),
-			}
-			delete newItem.data
+			};
+			delete newItem.data;
 			newFieldList.push(newItem);
 		}
 
-		const res = await RequestUtils.request.call(this, {
+		const res = (await RequestUtils.request.call(this, {
 			method: 'GET',
 			url: `/open-apis/bitable/v1/apps/${app_token}/tables/${table_id}/fields`,
 			qs: {
 				page_size: 100,
 			},
-		}) as { items?: Array<{ field_name: string }> };
+		})) as { items?: Array<{ field_name: string }> };
 
 		const nowFieldList = res.items || [];
 		// 找到不存在的字段列表

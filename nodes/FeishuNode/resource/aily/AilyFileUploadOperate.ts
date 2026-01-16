@@ -1,6 +1,6 @@
 import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
-import { ResourceOperations } from '../../../help/type/IResource';
+import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
 
 const AilyFileUploadOperate: ResourceOperations = {
@@ -53,7 +53,10 @@ const AilyFileUploadOperate: ResourceOperations = {
 		const file = (await NodeUtils.buildUploadFileData.call(this, fileFieldName, index)) as any;
 
 		if (!file || !file.value) {
-			throw new NodeOperationError(this.getNode(), '未找到文件数据，请检查二进制文件字段名是否正确');
+			throw new NodeOperationError(
+				this.getNode(),
+				'未找到文件数据，请检查二进制文件字段名是否正确',
+			);
 		}
 
 		// 使用 options 中的文件名，如果没有则使用原始文件名
@@ -70,7 +73,7 @@ const AilyFileUploadOperate: ResourceOperations = {
 		};
 
 		// 构建请求选项
-		const requestOptions: IDataObject = {
+		const requestOptions: IExtendedHttpRequestOptions = {
 			method: 'POST',
 			url: '/open-apis/aily/v1/files',
 			formData,
@@ -86,4 +89,3 @@ const AilyFileUploadOperate: ResourceOperations = {
 };
 
 export default AilyFileUploadOperate;
-

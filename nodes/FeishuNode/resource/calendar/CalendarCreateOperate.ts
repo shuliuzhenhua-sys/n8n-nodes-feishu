@@ -1,4 +1,4 @@
-import {IDataObject, IExecuteFunctions, INodeProperties} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestOptions } from 'n8n-workflow';
 import { ResourceOperations } from '../../../help/type/IResource';
 import RequestUtils from '../../../help/utils/RequestUtils';
 
@@ -37,21 +37,76 @@ export default {
 			name: 'color',
 			type: 'number',
 			default: -14513409,
-			description: '日历颜色，取值通过颜色 RGB 值的 int32 表示。日历颜色会映射到飞书客户端色板上最接近的一种颜色进行展示。',
+			description:
+				'日历颜色，取值通过颜色 RGB 值的 int32 表示。日历颜色会映射到飞书客户端色板上最接近的一种颜色进行展示。',
 		},
 		{
 			displayName: '日历备注名',
 			name: 'summary_alias',
 			type: 'string',
 			default: '',
-			description: '日历备注名，设置该字段后（包括后续修改该字段）仅对当前身份生效。最大长度：255 字符',
+			description:
+				'日历备注名，设置该字段后（包括后续修改该字段）仅对当前身份生效。最大长度：255 字符',
 		},
-		{ displayName: 'Options', name: 'options', type: 'collection', placeholder: 'Add option', default: {}, options: [{ displayName: 'Batching', name: 'batching', placeholder: 'Add Batching', type: 'fixedCollection', typeOptions: { multipleValues: false }, default: { batch: {} }, options: [{ displayName: 'Batching', name: 'batch', values: [{ displayName: 'Items per Batch', name: 'batchSize', type: 'number', typeOptions: { minValue: 1 }, default: 50, description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。' }, { displayName: 'Batch Interval (Ms)', name: 'batchInterval', type: 'number', typeOptions: { minValue: 0 }, default: 1000, description: '每批请求之间的时间（毫秒）。0 表示禁用。' }] }] }, { displayName: 'Timeout', name: 'timeout', type: 'number', typeOptions: { minValue: 0 }, default: 0, description: '等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。' }] },
+		{
+			displayName: 'Options',
+			name: 'options',
+			type: 'collection',
+			placeholder: 'Add option',
+			default: {},
+			options: [
+				{
+					displayName: 'Batching',
+					name: 'batching',
+					placeholder: 'Add Batching',
+					type: 'fixedCollection',
+					typeOptions: { multipleValues: false },
+					default: { batch: {} },
+					options: [
+						{
+							displayName: 'Batching',
+							name: 'batch',
+							values: [
+								{
+									displayName: 'Items per Batch',
+									name: 'batchSize',
+									type: 'number',
+									typeOptions: { minValue: 1 },
+									default: 50,
+									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
+								},
+								{
+									displayName: 'Batch Interval (Ms)',
+									name: 'batchInterval',
+									type: 'number',
+									typeOptions: { minValue: 0 },
+									default: 1000,
+									description: '每批请求之间的时间（毫秒）。0 表示禁用。',
+								},
+							],
+						},
+					],
+				},
+				{
+					displayName: 'Timeout',
+					name: 'timeout',
+					type: 'number',
+					typeOptions: { minValue: 0 },
+					default: 0,
+					description:
+						'等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。',
+				},
+			],
+		},
 	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 		const summary = this.getNodeParameter('summary', index, '') as string;
 		const description = this.getNodeParameter('description', index, '') as string;
-		const permissions = this.getNodeParameter('permissions', index, 'show_only_free_busy') as string;
+		const permissions = this.getNodeParameter(
+			'permissions',
+			index,
+			'show_only_free_busy',
+		) as string;
 		const color = this.getNodeParameter('color', index, -14513409) as number;
 		const summary_alias = this.getNodeParameter('summary_alias', index, '') as string;
 
@@ -64,9 +119,13 @@ export default {
 		if (summary_alias) body.summary_alias = summary_alias;
 
 		const options = this.getNodeParameter('options', index, {}) as {
-		timeout?: number;
-	};
-		const requestOptions: IDataObject = { method: 'POST', url: '/open-apis/calendar/v4/calendars', body };
+			timeout?: number;
+		};
+		const requestOptions: IHttpRequestOptions = {
+			method: 'POST',
+			url: '/open-apis/calendar/v4/calendars',
+			body,
+		};
 		if (options.timeout) requestOptions.timeout = options.timeout;
 
 		return RequestUtils.request.call(this, requestOptions);

@@ -1,6 +1,6 @@
 import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
-import { ResourceOperations } from '../../../help/type/IResource';
+import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
 
 const MessageFileDownloadOperate: ResourceOperations = {
 	name: '下载文件',
@@ -55,7 +55,7 @@ const MessageFileDownloadOperate: ResourceOperations = {
 			mimeType?: string;
 		};
 
-		const response = await RequestUtils.originRequest.call(this, {
+		const response = (await RequestUtils.originRequest.call(this, {
 			method: 'GET',
 			url: `/open-apis/im/v1/files/${file_key}`,
 			json: false,
@@ -64,13 +64,11 @@ const MessageFileDownloadOperate: ResourceOperations = {
 			headers: {
 				'Content-Type': 'application/json; charset=utf-8',
 			},
-		}) as { body: Buffer; headers: Record<string, string> };
+		} as IExtendedHttpRequestOptions)) as { body: Buffer; headers: Record<string, string> };
 
 		// 获取响应的 content-type，优先使用用户自定义的 MIME Type
 		const contentType =
-			options.mimeType?.trim() ||
-			response.headers?.['content-type'] ||
-			'application/octet-stream';
+			options.mimeType?.trim() || response.headers?.['content-type'] || 'application/octet-stream';
 
 		// 尝试从 Content-Disposition 获取文件名
 		let defaultFileName = file_key;

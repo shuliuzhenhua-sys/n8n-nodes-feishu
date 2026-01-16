@@ -1,6 +1,6 @@
 import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
-import { ResourceOperations } from '../../../help/type/IResource';
+import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
 
 const MessageImageUploadOperate: ResourceOperations = {
@@ -40,7 +40,10 @@ const MessageImageUploadOperate: ResourceOperations = {
 		const file = (await NodeUtils.buildUploadFileData.call(this, fileFieldName, index)) as any;
 
 		if (!file || !file.value) {
-			throw new NodeOperationError(this.getNode(), '未找到图片数据，请检查二进制文件字段名是否正确');
+			throw new NodeOperationError(
+				this.getNode(),
+				'未找到图片数据，请检查二进制文件字段名是否正确',
+			);
 		}
 
 		return RequestUtils.request.call(this, {
@@ -50,7 +53,7 @@ const MessageImageUploadOperate: ResourceOperations = {
 				image_type,
 				image: file,
 			},
-		});
+		} as IExtendedHttpRequestOptions);
 	},
 };
 

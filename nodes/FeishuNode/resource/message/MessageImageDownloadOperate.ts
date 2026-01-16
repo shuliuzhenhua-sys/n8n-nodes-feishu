@@ -1,6 +1,6 @@
 import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
-import { ResourceOperations } from '../../../help/type/IResource';
+import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
 
 const MessageImageDownloadOperate: ResourceOperations = {
 	name: '下载图片',
@@ -44,13 +44,13 @@ const MessageImageDownloadOperate: ResourceOperations = {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const options = this.getNodeParameter('options', index, {}) as { fileName?: string };
 
-		const response = await RequestUtils.originRequest.call(this, {
+		const response = (await RequestUtils.originRequest.call(this, {
 			method: 'GET',
 			url: `/open-apis/im/v1/images/${image_key}`,
 			json: false,
 			encoding: undefined,
 			resolveWithFullResponse: true,
-		}) as { body: Buffer; headers: Record<string, string> };
+		} as IExtendedHttpRequestOptions)) as { body: Buffer; headers: Record<string, string> };
 
 		// 获取响应的 content-type
 		const contentType = response.headers['content-type'] || 'image/png';

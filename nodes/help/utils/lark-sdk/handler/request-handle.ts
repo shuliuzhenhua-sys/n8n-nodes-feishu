@@ -38,7 +38,9 @@ export default class RequestHandle {
 						...rest,
 					};
 				} catch (e) {
-					this.logger.error(`parse encrypt data failed: ${e instanceof Error ? e.message : String(e)}`);
+					this.logger.error(
+						`parse encrypt data failed: ${e instanceof Error ? e.message : String(e)}`,
+					);
 					return rest;
 				}
 			}

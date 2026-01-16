@@ -19,7 +19,8 @@ export class RespondToFeishu implements INodeType {
 		group: ['output'],
 		version: 1,
 		usableAsTool: true,
-		subtitle: '={{$parameter["respondWith"] === "noResponse" ? "不返回任何响应" : "返回自定义 JSON 数据"}}',
+		subtitle:
+			'={{$parameter["respondWith"] === "noResponse" ? "不返回任何响应" : "返回自定义 JSON 数据"}}',
 		description: '同步响应飞书 Trigger 的请求',
 		defaults: {
 			name: '飞书响应',
@@ -50,16 +51,20 @@ export class RespondToFeishu implements INodeType {
 				displayName: '自定义响应 JSON',
 				name: 'responseJson',
 				type: 'json',
-				default: JSON.stringify({
-					toast: {
-						type: 'success',
-						content: '卡片交互成功',
-						i18n: {
-							zh_cn: '卡片交互成功',
-							en_us: 'card action success',
+				default: JSON.stringify(
+					{
+						toast: {
+							type: 'success',
+							content: '卡片交互成功',
+							i18n: {
+								zh_cn: '卡片交互成功',
+								en_us: 'card action success',
+							},
 						},
 					},
-				}, null, 2),
+					null,
+					2,
+				),
 				description: '自定义返回给飞书的 JSON 数据',
 				displayOptions: {
 					show: {
@@ -112,16 +117,14 @@ export class RespondToFeishu implements INodeType {
 				try {
 					responseData = typeof responseJson === 'string' ? JSON.parse(responseJson) : responseJson;
 				} catch (error) {
-					throw new NodeOperationError(
-						this.getNode(),
-						'无效的 JSON 格式',
-						{ itemIndex },
-					);
+					throw new NodeOperationError(this.getNode(), '无效的 JSON 格式', { itemIndex });
 				}
 			}
 
 			// 发送响应（使用 correlationId 关联）
-			const sent = correlationId ? feishuResponseManager.sendResponse(correlationId, responseData) : false;
+			const sent = correlationId
+				? feishuResponseManager.sendResponse(correlationId, responseData)
+				: false;
 
 			if (!sent) {
 				this.logger.warn(`未找到等待响应的关联 ID: ${correlationId}，可能已超时或已响应`);

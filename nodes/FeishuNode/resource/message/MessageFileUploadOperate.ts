@@ -1,6 +1,6 @@
 import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
-import { ResourceOperations } from '../../../help/type/IResource';
+import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
 
 const MessageFileUploadOperate: ResourceOperations = {
@@ -44,8 +44,7 @@ const MessageFileUploadOperate: ResourceOperations = {
 			],
 			required: true,
 			default: 'stream',
-			description:
-				'待上传的文件类型。若上传文件不属于以上枚举类型，可以使用 stream 格式',
+			description: '待上传的文件类型。若上传文件不属于以上枚举类型，可以使用 stream 格式',
 		},
 		{
 			displayName: '文件名',
@@ -89,7 +88,10 @@ const MessageFileUploadOperate: ResourceOperations = {
 		const file = (await NodeUtils.buildUploadFileData.call(this, fileFieldName, index)) as any;
 
 		if (!file || !file.value) {
-			throw new NodeOperationError(this.getNode(), '未找到文件数据，请检查二进制文件字段名是否正确');
+			throw new NodeOperationError(
+				this.getNode(),
+				'未找到文件数据，请检查二进制文件字段名是否正确',
+			);
 		}
 
 		if (!file_name) {
@@ -111,7 +113,7 @@ const MessageFileUploadOperate: ResourceOperations = {
 			method: 'POST',
 			url: '/open-apis/im/v1/files',
 			formData,
-		});
+		} as IExtendedHttpRequestOptions);
 	},
 };
 

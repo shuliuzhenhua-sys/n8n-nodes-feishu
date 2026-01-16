@@ -130,7 +130,7 @@ export class FeishuNodeTrigger implements INodeType {
 		const options = this.getNodeParameter('options', {}) as IDataObject;
 		const callbackToast = (options.callbackToast as string) || undefined;
 		// 使用与 UI 默认值一致的 3000ms
-	const responseTimeout = (options.responseTimeout as number) || 3000;
+		const responseTimeout = (options.responseTimeout as number) || 3000;
 
 		const appId = credentials['appid'] as string;
 		const appSecret = credentials['appsecret'] as string;

@@ -1,8 +1,4 @@
-import {
-	IDataObject,
-	IExecuteFunctions,
-	INodeProperties,
-} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestOptions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 
@@ -69,8 +65,7 @@ const MessageCardDelayUpdateOperate: ResourceOperations = {
 										minValue: 1,
 									},
 									default: 50,
-									description:
-										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
+									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -105,8 +100,8 @@ const MessageCardDelayUpdateOperate: ResourceOperations = {
 		const card = this.getNodeParameter('card', index) as string | object;
 		const open_ids_str = this.getNodeParameter('open_ids', index) as string;
 		const options = this.getNodeParameter('options', index, {}) as {
-		timeout?: number;
-	};
+			timeout?: number;
+		};
 		// 解析 card 参数
 		let cardObj: IDataObject;
 		if (typeof card === 'string') {
@@ -136,7 +131,7 @@ const MessageCardDelayUpdateOperate: ResourceOperations = {
 		};
 
 		// 构建请求选项
-		const requestOptions: IDataObject = {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'POST',
 			url: '/open-apis/interactive/v1/card/update',
 			body,

@@ -1,4 +1,4 @@
-import { ResourceOptions } from "../../help/type/IResource";
+import { ResourceOptions } from '../../help/type/IResource';
 
 const ChatResource: ResourceOptions = {
 	name: '群组管理',
@@ -6,4 +6,3 @@ const ChatResource: ResourceOptions = {
 };
 
 export default ChatResource;
-

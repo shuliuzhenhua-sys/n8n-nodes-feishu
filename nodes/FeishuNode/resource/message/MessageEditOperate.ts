@@ -1,8 +1,4 @@
-import {
-	IDataObject,
-	IExecuteFunctions,
-	INodeProperties,
-} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestOptions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 
@@ -95,8 +91,7 @@ const MessageEditOperate: ResourceOperations = {
 										minValue: 1,
 									},
 									default: 50,
-									description:
-										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
+									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -143,8 +138,7 @@ const MessageEditOperate: ResourceOperations = {
 			}
 			case 'post': {
 				const post_content = this.getNodeParameter('post_content', index);
-				content =
-					typeof post_content === 'string' ? post_content : JSON.stringify(post_content);
+				content = typeof post_content === 'string' ? post_content : JSON.stringify(post_content);
 				break;
 			}
 			default:
@@ -157,7 +151,7 @@ const MessageEditOperate: ResourceOperations = {
 		};
 
 		// 构建请求选项
-		const requestOptions: IDataObject = {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'PUT',
 			url: `/open-apis/im/v1/messages/${message_id}`,
 			body,

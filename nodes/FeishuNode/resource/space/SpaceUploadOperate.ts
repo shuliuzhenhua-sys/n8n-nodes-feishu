@@ -1,9 +1,9 @@
-import {IDataObject, IExecuteFunctions, NodeOperationError} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
-import NodeUtils from "../../../help/utils/NodeUtils";
+import NodeUtils from '../../../help/utils/NodeUtils';
 
-export default  {
+export default {
 	name: '上传素材',
 	value: 'space:upload',
 	order: 50,
@@ -90,10 +90,10 @@ export default  {
 		const parent_type = this.getNodeParameter('parent_type', index) as string;
 		const parent_node = this.getNodeParameter('parent_node', index) as string;
 		const fileFieldName = this.getNodeParameter('fileFieldName', index) as string;
-		const file = await NodeUtils.buildUploadFileData.call(this, fileFieldName, index) as any;
+		const file = (await NodeUtils.buildUploadFileData.call(this, fileFieldName, index)) as any;
 
-		const fileName = file_name ? file_name: file.options.filename;
-		if (!fileName){
+		const fileName = file_name ? file_name : file.options.filename;
+		if (!fileName) {
 			throw new NodeOperationError(this.getNode(), 'No file name given for media upload.');
 		}
 
@@ -104,7 +104,6 @@ export default  {
 		// formData.append('size', file.value.length);
 		// formData.append('file', file.value, { contentType: file.options.mimeType, filename: fileName });
 
-
 		return RequestUtils.request.call(this, {
 			method: 'POST',
 			url: `/open-apis/drive/v1/medias/upload_all`,
@@ -114,7 +113,7 @@ export default  {
 				parent_type,
 				parent_node,
 				size: file.value.length,
-				file: file
+				file: file,
 			},
 		});
 	},

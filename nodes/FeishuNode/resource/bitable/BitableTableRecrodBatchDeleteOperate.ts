@@ -1,9 +1,9 @@
 import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
-import NodeUtils from "../../../help/utils/NodeUtils";
+import NodeUtils from '../../../help/utils/NodeUtils';
 
-export default  {
+export default {
 	name: '批量删除记录',
 	value: 'bitable:table:record:batchDelete',
 	order: 70,
@@ -43,7 +43,7 @@ export default  {
 		return RequestUtils.request.call(this, {
 			method: 'POST',
 			url: `/open-apis/bitable/v1/apps/${app_token}/tables/${table_id}/records/batch_delete`,
-			body: body
+			body: body,
 		});
 	},
 } as ResourceOperations;

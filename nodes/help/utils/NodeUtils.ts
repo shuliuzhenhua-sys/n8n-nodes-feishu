@@ -76,9 +76,10 @@ class NodeUtils {
 		// 解析文件大小：fileSize 可能是字符串或数字
 		let fileLength: number | undefined;
 		if (binaryData.fileSize !== undefined) {
-			fileLength = typeof binaryData.fileSize === 'string'
-				? parseInt(binaryData.fileSize, 10)
-				: binaryData.fileSize;
+			fileLength =
+				typeof binaryData.fileSize === 'string'
+					? parseInt(binaryData.fileSize, 10)
+					: binaryData.fileSize;
 		}
 
 		return {

@@ -3,6 +3,7 @@ import {
 	IExecuteFunctions,
 	INodeProperties,
 	IHttpRequestMethods,
+	IHttpRequestOptions,
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
@@ -65,7 +66,8 @@ const DepartmentUserListOperate: ResourceOperations = {
 			description: 'Max number of results to return',
 		},
 		{
-			displayName: '获取部门直属用户列表数据中可能存在重复用户数据，这是预期行为，因为有的用户存在多个部门。如需去重请在后续节点自行使用 Remove Duplicates 节点去重。',
+			displayName:
+				'获取部门直属用户列表数据中可能存在重复用户数据，这是预期行为，因为有的用户存在多个部门。如需去重请在后续节点自行使用 Remove Duplicates 节点去重。',
 			name: 'duplicateNotice',
 			type: 'notice',
 			default: '',
@@ -101,8 +103,7 @@ const DepartmentUserListOperate: ResourceOperations = {
 										minValue: 1,
 									},
 									default: 50,
-									description:
-										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
+									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
 								},
 								{
 									displayName: 'Batch Interval (Ms)',
@@ -135,7 +136,11 @@ const DepartmentUserListOperate: ResourceOperations = {
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject[]> {
 		const department_id = this.getNodeParameter('department_id', index) as string;
 		const user_id_type = this.getNodeParameter('user_id_type', index, 'open_id') as string;
-		const department_id_type = this.getNodeParameter('department_id_type', index, 'open_department_id') as string;
+		const department_id_type = this.getNodeParameter(
+			'department_id_type',
+			index,
+			'open_department_id',
+		) as string;
 		const returnAll = this.getNodeParameter('returnAll', index, false) as boolean;
 		const limit = this.getNodeParameter('limit', index, 50) as number;
 		const options = this.getNodeParameter('options', index, {}) as {
@@ -155,7 +160,7 @@ const DepartmentUserListOperate: ResourceOperations = {
 				qs.page_token = pageToken;
 			}
 
-			const requestOptions: IDataObject = {
+			const requestOptions: IHttpRequestOptions = {
 				method: 'GET' as IHttpRequestMethods,
 				url: '/open-apis/contact/v3/users/find_by_department',
 				qs,
