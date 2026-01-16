@@ -6,6 +6,7 @@ import NodeUtils from '../../../help/utils/NodeUtils';
 const DocBlockCreateOperate: ResourceOperations = {
 	name: '创建块',
 	value: 'doc:block:create',
+	order: 70,
 	options: [
 		{
 			displayName: '文档 ID',

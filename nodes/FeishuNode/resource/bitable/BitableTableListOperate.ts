@@ -5,7 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 export default {
 	name: '列出数据表',
 	value: 'bitable:table:list',
-	order: 90,
+	order: 70,
 	options: [
 		{
 			displayName: '多维表格 Token',

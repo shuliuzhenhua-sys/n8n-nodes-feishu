@@ -11,6 +11,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const DepartmentUserListOperate: ResourceOperations = {
 	name: '获取部门直属用户列表',
 	value: 'department:userList',
+	order: 50,
 	options: [
 		{
 			displayName: '部门 ID',

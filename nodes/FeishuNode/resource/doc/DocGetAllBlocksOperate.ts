@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const DocGetAllBlocksOperate: ResourceOperations = {
 	name: '获取文档所有块',
 	value: 'doc:getAllBlocks',
+	order: 50,
 	options: [
 		{
 			displayName: '文档 ID',

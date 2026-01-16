@@ -11,7 +11,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const WikiSpacesGetMembersOperate: ResourceOperations = {
 	name: '获取知识空间成员列表',
 	value: 'wiki:spaces:members:get',
-	order: 95,
+	order: 60,
 	options: [
 		{
 			displayName: '知识空间ID',

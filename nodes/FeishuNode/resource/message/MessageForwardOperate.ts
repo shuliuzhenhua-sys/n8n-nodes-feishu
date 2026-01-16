@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const MessageForwardOperate: ResourceOperations = {
 	name: '转发消息',
 	value: 'message:forward',
+	order: 40,
 	options: [
 		{
 			displayName: '待转发的消息的ID',

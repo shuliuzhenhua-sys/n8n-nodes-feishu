@@ -40,6 +40,7 @@ const JOB_ERROR_MESSAGES: Record<number, string> = {
 const SpaceExportOperate: ResourceOperations = {
 	name: '导出云文档',
 	value: 'space:export',
+	order: 50,
 	options: [
 		{
 			displayName: '云文档类型',

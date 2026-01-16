@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const AilySkillsListOperate: ResourceOperations = {
 	name: '查询技能列表',
 	value: 'aily:skillsList',
+	order: 40,
 	options: [
 		{
 			displayName: '应用 ID',

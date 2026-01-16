@@ -6,24 +6,16 @@ class ResourceFactory {
 	static build(basedir: string): ResourceBuilder {
 		const resourceBuilder = new ResourceBuilder();
 		const resources: ResourceOptions[] = ModuleLoadUtils.loadModules(basedir, 'resource/*.js');
-		// 排序
-		resources.sort((a, b) => {
-			if (!a.order) a.order = 0;
-			if (!b.order) b.order = 0;
-			return b.order - a.order;
-		});
+		// 排序：order 值越小越靠前
+		resources.sort((a, b) => (a.order ?? 100) - (b.order ?? 100));
 		resources.forEach((resource) => {
 			resourceBuilder.addResource(resource);
 			const operates: ResourceOperations[] = ModuleLoadUtils.loadModules(
 				basedir,
 				`resource/${resource.value}/*.js`,
 			);
-			// 排序
-			operates.sort((a, b) => {
-				if (!a.order) a.order = 0;
-				if (!b.order) b.order = 0;
-				return b.order - a.order;
-			});
+			// 排序：order 值越小越靠前
+			operates.sort((a, b) => (a.order ?? 100) - (b.order ?? 100));
 			operates.forEach((operate: ResourceOperations) => {
 				// @ts-ignore
 				resourceBuilder.addOperate(resource.value, operate);

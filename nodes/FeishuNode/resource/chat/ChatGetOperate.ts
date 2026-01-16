@@ -11,6 +11,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const ChatGetOperate: ResourceOperations = {
 	name: '获取群信息',
 	value: 'chat:get',
+	order: 10,
 	options: [
 		{
 			displayName: '群 ID',

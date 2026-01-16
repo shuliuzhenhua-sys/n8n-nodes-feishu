@@ -6,7 +6,7 @@ import NodeUtils from '../../../help/utils/NodeUtils';
 export default {
 	name: '新增字段',
 	value: 'bitable:table:field:add',
-	order: 60,
+	order: 250,
 	options: [
 		{
 			displayName: '多维表格 Token',

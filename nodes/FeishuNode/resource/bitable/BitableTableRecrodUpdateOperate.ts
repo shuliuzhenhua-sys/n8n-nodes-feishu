@@ -6,7 +6,7 @@ import NodeUtils from '../../../help/utils/NodeUtils';
 export default {
 	name: '更新记录',
 	value: 'bitable:table:record:update',
-	order: 70,
+	order: 190,
 	options: [
 		{
 			displayName: '多维表格 Token',

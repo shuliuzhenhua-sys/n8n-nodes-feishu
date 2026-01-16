@@ -11,6 +11,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const ChatRemoveMembersOperate: ResourceOperations = {
 	name: '移出群成员',
 	value: 'chat:remove_members',
+	order: 60,
 	options: [
 		{
 			displayName: '群 ID',

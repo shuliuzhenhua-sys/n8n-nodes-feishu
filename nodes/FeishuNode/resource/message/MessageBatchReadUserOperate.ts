@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const MessageBatchReadUserOperate: ResourceOperations = {
 	name: '查询批量消息推送和阅读人数',
 	value: 'message:batchReadUser',
+	order: 90,
 	options: [
 		{
 			displayName: '批量消息任务ID',

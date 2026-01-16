@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const MessageBatchRecallOperate: ResourceOperations = {
 	name: '批量撤回消息',
 	value: 'message:batchRecall',
+	order: 70,
 	options: [
 		{
 			displayName: '待撤回的批量消息任务ID',

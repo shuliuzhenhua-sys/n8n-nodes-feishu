@@ -5,7 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const WikiSpacesNodeGetInfoOperate: ResourceOperations = {
 	name: '获取知识空间节点信息',
 	value: 'wiki:spaces:node:info',
-	order: 90,
+	order: 100,
 	options: [
 		{
 			displayName: '节点Token',

@@ -6,7 +6,7 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 export default {
 	name: '创建任务',
 	value: 'task:create',
-	order: 100,
+	order: 10,
 	options: [
 		{
 			displayName: '任务标题',

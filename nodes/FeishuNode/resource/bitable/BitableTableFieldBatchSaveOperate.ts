@@ -7,7 +7,7 @@ export default {
 	name: '批量保存字段',
 	value: 'bitable:table:field:batchSave',
 	description: '只支持增量保存字段，最大100个',
-	order: 60,
+	order: 280,
 	options: [
 		{
 			displayName: '多维表格 Token',

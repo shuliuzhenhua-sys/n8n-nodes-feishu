@@ -5,7 +5,7 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 export default {
 	name: '删除任务',
 	value: 'task:delete',
-	order: 100,
+	order: 40,
 	options: [
 		{
 			displayName: '任务ID',

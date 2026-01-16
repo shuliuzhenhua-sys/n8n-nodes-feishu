@@ -11,7 +11,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const WikiSpacesNodeGetChildrenOperate: ResourceOperations = {
 	name: '获取知识空间子节点列表',
 	value: 'wiki:spaces:node:children',
-	order: 90,
+	order: 110,
 	options: [
 		{
 			displayName: '知识空间ID',

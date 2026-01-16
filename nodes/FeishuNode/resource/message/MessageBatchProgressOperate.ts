@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const MessageBatchProgressOperate: ResourceOperations = {
 	name: '查询批量消息整体进度',
 	value: 'message:batchProgress',
+	order: 80,
 	options: [
 		{
 			displayName: '批量消息任务ID',

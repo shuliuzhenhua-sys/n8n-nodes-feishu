@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const DocBlockDeleteOperate: ResourceOperations = {
 	name: '删除块',
 	value: 'doc:block:delete',
+	order: 100,
 	options: [
 		{
 			displayName: '文档 ID',

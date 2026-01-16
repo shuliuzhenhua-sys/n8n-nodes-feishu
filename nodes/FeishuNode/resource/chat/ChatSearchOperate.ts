@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const ChatSearchOperate: ResourceOperations = {
 	name: '搜索对用户或机器人可见的群列表',
 	value: 'chat:search',
+	order: 30,
 	options: [
 		{
 			displayName: '关键词',

@@ -5,7 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const BitableInfoCopyOperate: ResourceOperations = {
 	name: '复制多维表格',
 	value: 'bitable:copy',
-	order: 100,
+	order: 30,
 	options: [
 		{
 			displayName: '多维表格 Token',

@@ -5,6 +5,7 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 export default {
 	name: '搜索日历',
 	value: 'calendar:search',
+	order: 10,
 	options: [
 		{
 			displayName: '搜索关键字',

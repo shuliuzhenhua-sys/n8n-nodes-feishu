@@ -5,7 +5,7 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 export default {
 	name: '创建会议群',
 	value: 'calendar:createEventMeetingChat',
-	order: 70,
+	order: 150,
 	options: [
 		{
 			displayName: '日历 ID',

@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const MessageImageDownloadOperate: ResourceOperations = {
 	name: '下载图片',
 	value: 'message:imageDownload',
+	order: 160,
 	options: [
 		{
 			displayName: '图片Key',

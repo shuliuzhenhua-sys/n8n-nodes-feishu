@@ -5,6 +5,7 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 export default {
 	name: '创建共享日历',
 	value: 'calendar:create',
+	order: 40,
 	options: [
 		{
 			displayName: '日历标题',

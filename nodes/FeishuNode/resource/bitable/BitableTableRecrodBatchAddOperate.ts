@@ -6,7 +6,7 @@ import NodeUtils from '../../../help/utils/NodeUtils';
 export default {
 	name: '批量新增记录',
 	value: 'bitable:table:record:batchAdd',
-	order: 70,
+	order: 210,
 	options: [
 		{
 			displayName: '多维表格 Token',

@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const SpaceSubscribeOperate: ResourceOperations = {
 	name: '订阅云文档事件',
 	value: 'space:subscribe',
+	order: 30,
 	options: [
 		{
 			displayName: '文档Token',

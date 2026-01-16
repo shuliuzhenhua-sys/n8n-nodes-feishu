@@ -11,6 +11,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const AilySkillStartOperate: ResourceOperations = {
 	name: '调用技能',
 	value: 'aily:skillStart',
+	order: 30,
 	options: [
 		{
 			displayName: '应用 ID',

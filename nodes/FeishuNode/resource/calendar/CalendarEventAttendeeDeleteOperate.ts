@@ -6,7 +6,7 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 export default {
 	name: '删除日程参与人',
 	value: 'calendar:deleteEventAttendees',
-	order: 80,
+	order: 140,
 	options: [
 		{
 			displayName: '日历 ID',

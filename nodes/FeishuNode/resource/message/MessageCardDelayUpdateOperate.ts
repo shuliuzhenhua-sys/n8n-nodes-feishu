@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const MessageCardDelayUpdateOperate: ResourceOperations = {
 	name: '延时更新消息卡片',
 	value: 'message:cardDelayUpdate',
+	order: 110,
 	options: [
 		{
 			displayName: 'Token',

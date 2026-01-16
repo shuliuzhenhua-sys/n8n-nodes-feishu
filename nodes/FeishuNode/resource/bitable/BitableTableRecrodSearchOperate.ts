@@ -12,7 +12,7 @@ import NodeUtils from '../../../help/utils/NodeUtils';
 export default {
 	name: '查询记录',
 	value: 'bitable:table:record:search',
-	order: 70,
+	order: 160,
 	options: [
 		{
 			displayName: '多维表格 Token',

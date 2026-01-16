@@ -6,7 +6,7 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 export default {
 	name: '搜索日程',
 	value: 'calendar:searchEvents',
-	order: 90,
+	order: 80,
 	options: [
 		{
 			displayName: '日历 ID',

@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const UserBatchGetIdOperate: ResourceOperations = {
 	name: '通过手机号或邮箱获取用户 ID',
 	value: 'user:batchGetId',
+	order: 30,
 	options: [
 		{
 			displayName: '返回的用户ID类型',

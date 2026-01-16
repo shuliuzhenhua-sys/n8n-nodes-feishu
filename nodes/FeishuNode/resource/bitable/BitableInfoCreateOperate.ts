@@ -5,7 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const BitableInfoCreateOperate: ResourceOperations = {
 	name: '创建多维表格',
 	value: 'bitable:create',
-	order: 100,
+	order: 20,
 	options: [
 		{
 			displayName: '多维表格名称',

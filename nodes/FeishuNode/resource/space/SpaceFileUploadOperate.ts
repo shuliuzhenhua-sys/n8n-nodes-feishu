@@ -7,7 +7,7 @@ import FormData from 'form-data';
 const SpaceFileUploadOperate: ResourceOperations = {
 	name: '上传文件',
 	value: 'space:fileUpload',
-	order: 51,
+	order: 60,
 	options: [
 		{
 			displayName: '文件夹 Token',

@@ -7,6 +7,7 @@ import FormData from 'form-data';
 const AilyFileUploadOperate: ResourceOperations = {
 	name: '文件上传',
 	value: 'aily:fileUpload',
+	order: 20,
 	options: [
 		{
 			displayName: 'Input Data Field Name',

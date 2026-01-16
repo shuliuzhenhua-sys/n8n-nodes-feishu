@@ -5,7 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const WikiSpacesNodeCreateOperate: ResourceOperations = {
 	name: '创建知识空间节点',
 	value: 'wiki:spaces:node:create',
-	order: 90,
+	order: 70,
 	options: [
 		{
 			displayName: '知识空间ID',

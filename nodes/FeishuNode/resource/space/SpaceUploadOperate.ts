@@ -7,7 +7,7 @@ import FormData from 'form-data';
 export default {
 	name: '上传素材',
 	value: 'space:upload',
-	order: 50,
+	order: 10,
 	options: [
 		{
 			displayName: '上传点的类型',

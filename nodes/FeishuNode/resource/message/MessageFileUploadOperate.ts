@@ -7,6 +7,7 @@ import FormData from 'form-data';
 const MessageFileUploadOperate: ResourceOperations = {
 	name: '上传文件',
 	value: 'message:fileUpload',
+	order: 170,
 	options: [
 		{
 			displayName: '文件类型',

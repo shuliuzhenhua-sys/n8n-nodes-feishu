@@ -7,6 +7,7 @@ const ExportDataTableToBitableOperate: ResourceOperations = {
 	name: '导出多维表格',
 	description: '导出数据到飞书多维表格',
 	value: 'bitable:aggregate:copyDataTableToBitable',
+	order: 60,
 	options: [
 		{
 			displayName: '多维表格 Token',

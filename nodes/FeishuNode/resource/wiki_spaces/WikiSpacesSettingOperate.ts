@@ -5,7 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const WikiSpacesUpdateSettingOperate: ResourceOperations = {
 	name: '更新知识空间设置',
 	value: 'wiki:spaces:settings:update',
-	order: 98,
+	order: 30,
 	options: [
 		{
 			displayName: '知识空间ID',

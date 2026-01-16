@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const MessageEphemeralSendOperate: ResourceOperations = {
 	name: '发送仅特定人可见的消息卡片',
 	value: 'message:ephemeralSend',
+	order: 120,
 	options: [
 		{
 			displayName: '群ID',

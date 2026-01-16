@@ -11,6 +11,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const AilyFileGetOperate: ResourceOperations = {
 	name: '读取文件基础信息',
 	value: 'aily:fileGet',
+	order: 10,
 	options: [
 		{
 			displayName: '文件 ID',

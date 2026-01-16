@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const MessageFileDownloadOperate: ResourceOperations = {
 	name: '下载文件',
 	value: 'message:fileDownload',
+	order: 180,
 	options: [
 		{
 			displayName: '文件Key',

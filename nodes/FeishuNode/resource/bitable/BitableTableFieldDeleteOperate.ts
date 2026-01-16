@@ -5,7 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 export default {
 	name: '删除字段',
 	value: 'bitable:table:field:delete',
-	order: 60,
+	order: 270,
 	options: [
 		{
 			displayName: '多维表格 Token',

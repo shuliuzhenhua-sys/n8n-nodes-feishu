@@ -7,6 +7,7 @@ import FormData from 'form-data';
 const MessageImageUploadOperate: ResourceOperations = {
 	name: '上传图片',
 	value: 'message:imageUpload',
+	order: 150,
 	options: [
 		{
 			displayName: '图片类型',

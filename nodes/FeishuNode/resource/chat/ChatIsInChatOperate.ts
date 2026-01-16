@@ -11,6 +11,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const ChatIsInChatOperate: ResourceOperations = {
 	name: '判断用户或机器人是否在群里',
 	value: 'chat:is_in_chat',
+	order: 70,
 	options: [
 		{
 			displayName: '群 ID',

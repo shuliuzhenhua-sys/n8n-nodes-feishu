@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const DocBlockConvertOperate: ResourceOperations = {
 	name: 'Markdown/HTML 内容转换为文档块',
 	value: 'doc:block:convert',
+	order: 110,
 	options: [
 		{
 			displayName: '内容类型',

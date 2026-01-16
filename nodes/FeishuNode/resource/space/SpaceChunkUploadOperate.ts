@@ -53,7 +53,7 @@ async function runWithConcurrency<T>(
 const SpaceChunkUploadOperate: ResourceOperations = {
 	name: '分片上传文件',
 	value: 'space:chunkUpload',
-	order: 52,
+	order: 70,
 	options: [
 		{
 			displayName: '文件夹 Token',

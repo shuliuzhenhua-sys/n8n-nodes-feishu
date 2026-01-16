@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const DocGetContentOperate: ResourceOperations = {
 	name: '获取云文档内容',
 	value: 'doc:getContent',
+	order: 40,
 	options: [
 		{
 			displayName: '文档 Token',

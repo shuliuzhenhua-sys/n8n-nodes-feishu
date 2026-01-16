@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const MessageUrgentAppOperate: ResourceOperations = {
 	name: '发送应用内加急',
 	value: 'message:urgentApp',
+	order: 140,
 	options: [
 		{
 			displayName: '消息ID',

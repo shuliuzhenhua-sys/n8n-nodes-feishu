@@ -5,7 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const BitableTableAddOperate: ResourceOperations = {
 	name: '删除数据表',
 	value: 'bitable:table:delete',
-	order: 90,
+	order: 100,
 	options: [
 		{
 			displayName: '多维表格 Token',

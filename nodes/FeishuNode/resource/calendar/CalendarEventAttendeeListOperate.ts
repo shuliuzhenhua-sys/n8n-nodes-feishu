@@ -5,7 +5,7 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 export default {
 	name: '获取日程参与人列表',
 	value: 'calendar:listEventAttendees',
-	order: 80,
+	order: 120,
 	options: [
 		{
 			displayName: '日历 ID',

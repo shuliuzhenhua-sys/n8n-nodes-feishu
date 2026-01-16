@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const ChatListMembersOperate: ResourceOperations = {
 	name: '获取群成员列表',
 	value: 'chat:listMembers',
+	order: 40,
 	options: [
 		{
 			displayName: '群 ID',

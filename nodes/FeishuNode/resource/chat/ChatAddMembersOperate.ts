@@ -11,6 +11,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const ChatAddMembersOperate: ResourceOperations = {
 	name: '将用户或机器人拉入群聊',
 	value: 'chat:addMembers',
+	order: 50,
 	options: [
 		{
 			displayName: '群 ID',

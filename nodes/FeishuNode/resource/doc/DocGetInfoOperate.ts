@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const DocGetInfoOperate: ResourceOperations = {
 	name: '获取文档基本信息',
 	value: 'doc:getInfo',
+	order: 20,
 	options: [
 		{
 			displayName: '文档 ID',

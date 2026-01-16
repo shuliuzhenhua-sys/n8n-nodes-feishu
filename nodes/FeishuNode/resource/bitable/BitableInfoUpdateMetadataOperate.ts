@@ -5,7 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const BitableInfoUpdateMetadataOperate: ResourceOperations = {
 	name: '更新多维表格元数据',
 	value: 'bitable:updateMetadata',
-	order: 100,
+	order: 50,
 	options: [
 		{
 			displayName: '多维表格 Token',

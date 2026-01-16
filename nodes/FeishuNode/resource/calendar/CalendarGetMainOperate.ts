@@ -5,7 +5,7 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 export default {
 	name: '查询主日历信息',
 	value: 'calendar:getPrimaryCalendar',
-	order: 100,
+	order: 30,
 	options: [
 		{
 			displayName: '用户 ID 类型',

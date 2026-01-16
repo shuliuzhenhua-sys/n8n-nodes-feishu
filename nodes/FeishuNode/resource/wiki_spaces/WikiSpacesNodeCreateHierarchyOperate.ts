@@ -11,7 +11,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const WikiSpacesNodeCreateHierarchyOperate: ResourceOperations = {
 	name: '创建动态层级的知识库空间节点 (自定义封装)',
 	value: 'wiki:spaces:node:create:hierarchy',
-	order: 89,
+	order: 80,
 	options: [
 		{
 			displayName: '知识空间ID',

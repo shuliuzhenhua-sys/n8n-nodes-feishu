@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const MessageRecallOperate: ResourceOperations = {
 	name: '撤回消息',
 	value: 'message:recall',
+	order: 50,
 	options: [
 		{
 			displayName: '待撤回的消息的ID',

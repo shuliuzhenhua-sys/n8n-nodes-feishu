@@ -5,6 +5,7 @@ import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/t
 const UserBatchGetOperate: ResourceOperations = {
 	name: '批量获取用户信息',
 	value: 'user:batchGet',
+	order: 20,
 	options: [
 		{
 			displayName: '用户ID列表',

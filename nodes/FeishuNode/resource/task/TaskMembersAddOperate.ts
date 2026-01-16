@@ -6,7 +6,7 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 export default {
 	name: '添加任务成员',
 	value: 'task:add_members',
-	order: 90,
+	order: 50,
 	options: [
 		{
 			displayName: '任务ID',

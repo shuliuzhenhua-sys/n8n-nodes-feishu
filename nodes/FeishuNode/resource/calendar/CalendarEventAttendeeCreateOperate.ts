@@ -5,7 +5,7 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 export default {
 	name: '添加日程参与人',
 	value: 'calendar:addEventAttendees',
-	order: 80,
+	order: 130,
 	options: [
 		{
 			displayName: '日历 ID',

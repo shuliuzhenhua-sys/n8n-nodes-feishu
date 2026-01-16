@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const DocGetRawContentOperate: ResourceOperations = {
 	name: '获取文档纯文本内容',
 	value: 'doc:getRawContent',
+	order: 30,
 	options: [
 		{
 			displayName: '文档 ID',

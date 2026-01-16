@@ -6,7 +6,7 @@ import NodeUtils from '../../../help/utils/NodeUtils';
 export default {
 	name: '批量删除记录',
 	value: 'bitable:table:record:batchDelete',
-	order: 70,
+	order: 230,
 	options: [
 		{
 			displayName: '多维表格 Token',

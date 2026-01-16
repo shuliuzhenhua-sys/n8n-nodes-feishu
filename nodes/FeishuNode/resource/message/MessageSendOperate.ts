@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const MessageSendOperate: ResourceOperations = {
 	name: '发送消息',
 	value: 'message:send',
+	order: 10,
 	options: [
 		{
 			displayName: '用户ID类型',

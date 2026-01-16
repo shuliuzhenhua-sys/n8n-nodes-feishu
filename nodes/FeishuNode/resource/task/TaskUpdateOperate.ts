@@ -6,7 +6,7 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 export default {
 	name: '更新任务',
 	value: 'task:update',
-	order: 100,
+	order: 30,
 	options: [
 		{
 			displayName: '任务ID',

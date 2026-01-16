@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const MessageEditOperate: ResourceOperations = {
 	name: '编辑消息',
 	value: 'message:edit',
+	order: 30,
 	options: [
 		{
 			displayName: '待编辑的消息的ID',

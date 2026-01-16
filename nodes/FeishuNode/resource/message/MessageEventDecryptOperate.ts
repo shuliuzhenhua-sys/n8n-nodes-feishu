@@ -5,6 +5,7 @@ import { decryptFeishuEvent } from '../../../help/utils/FeishuDecryptUtils';
 const MessageEventDecryptOperate: ResourceOperations = {
 	name: '解密事件消息',
 	value: 'message:eventDecrypt',
+	order: 190,
 	options: [
 		{
 			displayName: 'Encrypt Key',

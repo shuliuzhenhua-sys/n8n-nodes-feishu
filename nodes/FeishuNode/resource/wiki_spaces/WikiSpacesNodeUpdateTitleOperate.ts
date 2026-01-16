@@ -5,7 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const WikiSpacesNodeUpdateTitleOperate: ResourceOperations = {
 	name: '更新知识空间节点标题',
 	value: 'wiki:spaces:node:updateTitle',
-	order: 90,
+	order: 130,
 	options: [
 		{
 			displayName: '知识空间ID',

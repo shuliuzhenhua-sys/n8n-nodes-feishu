@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const UserGetInfoOperate: ResourceOperations = {
 	name: '获取用户信息',
 	value: 'user:get',
+	order: 10,
 	options: [
 		{
 			displayName: '用户ID类型',

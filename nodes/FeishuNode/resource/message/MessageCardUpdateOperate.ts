@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const MessageCardUpdateOperate: ResourceOperations = {
 	name: '更新已发送的消息卡片',
 	value: 'message:cardUpdate',
+	order: 100,
 	options: [
 		{
 			displayName: '消息ID',

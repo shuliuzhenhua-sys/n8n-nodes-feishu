@@ -6,6 +6,7 @@ import NodeUtils from '../../../help/utils/NodeUtils';
 const DocBlockUpdateContentOperate: ResourceOperations = {
 	name: '更新块的内容',
 	value: 'doc:block:updateContent',
+	order: 90,
 	options: [
 		{
 			displayName: '文档 ID',

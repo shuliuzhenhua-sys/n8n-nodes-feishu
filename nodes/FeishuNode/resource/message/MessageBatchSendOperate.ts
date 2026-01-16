@@ -6,6 +6,7 @@ import NodeUtils from '../../../help/utils/NodeUtils';
 const MessageBatchSendOperate: ResourceOperations = {
 	name: '批量发送消息',
 	value: 'message:batchSend',
+	order: 60,
 	options: [
 		{
 			displayName: '消息类型',

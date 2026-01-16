@@ -5,7 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const WikiSpacesNodeMoveOperate: ResourceOperations = {
 	name: '移动知识空间节点',
 	value: 'wiki:spaces:node:move',
-	order: 90,
+	order: 120,
 	options: [
 		{
 			displayName: '源知识空间ID',

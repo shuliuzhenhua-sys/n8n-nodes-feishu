@@ -6,7 +6,7 @@ import NodeUtils from '../../../help/utils/NodeUtils';
 const BitableTableAddOperate: ResourceOperations = {
 	name: '新增数据表',
 	value: 'bitable:table:add',
-	order: 90,
+	order: 80,
 	options: [
 		{
 			displayName: '多维表格 Token',

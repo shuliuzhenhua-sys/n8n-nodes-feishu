@@ -11,6 +11,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const ChatAddManagersOperate: ResourceOperations = {
 	name: '指定群管理员',
 	value: 'chat:addManagers',
+	order: 80,
 	options: [
 		{
 			displayName: '群 ID',

@@ -5,7 +5,7 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 const BitableParseUrlOperate: ResourceOperations = {
 	name: '解析多维表格地址',
 	value: 'bitable:parseUrl',
-	order: 100,
+	order: 10,
 	options: [
 		{
 			displayName: '多维表格地址',

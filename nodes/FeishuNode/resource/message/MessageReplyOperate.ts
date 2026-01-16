@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const MessageReplyOperate: ResourceOperations = {
 	name: '回复消息',
 	value: 'message:reply',
+	order: 20,
 	options: [
 		{
 			displayName: '待回复的消息的ID',

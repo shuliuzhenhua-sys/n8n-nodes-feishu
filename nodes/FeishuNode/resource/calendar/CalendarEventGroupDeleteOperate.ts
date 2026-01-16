@@ -5,7 +5,7 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 export default {
 	name: '解绑会议群',
 	value: 'calendar:unbindEventMeetingChat',
-	order: 70,
+	order: 160,
 	options: [
 		{
 			displayName: '日历 ID',

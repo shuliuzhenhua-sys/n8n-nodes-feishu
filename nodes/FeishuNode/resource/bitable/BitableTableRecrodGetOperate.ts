@@ -5,7 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 export default {
 	name: '查询记录-通过记录ID',
 	value: 'bitable:table:record:get',
-	order: 70,
+	order: 170,
 	options: [
 		{
 			displayName: '多维表格 Token',

@@ -11,6 +11,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const AilySkillGetOperate: ResourceOperations = {
 	name: '获取技能信息',
 	value: 'aily:skillGet',
+	order: 50,
 	options: [
 		{
 			displayName: '应用 ID',

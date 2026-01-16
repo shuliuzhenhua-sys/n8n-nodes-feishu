@@ -5,7 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const WikiSpacesDeleteMemberOperate: ResourceOperations = {
 	name: '删除知识空间成员',
 	value: 'wiki:spaces:members:delete',
-	order: 97,
+	order: 50,
 	options: [
 		{
 			displayName: '知识空间ID',

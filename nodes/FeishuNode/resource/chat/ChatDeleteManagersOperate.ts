@@ -11,6 +11,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const ChatDeleteManagersOperate: ResourceOperations = {
 	name: '删除群管理员',
 	value: 'chat:deleteManagers',
+	order: 90,
 	options: [
 		{
 			displayName: '群 ID',

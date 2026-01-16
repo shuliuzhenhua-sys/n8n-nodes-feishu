@@ -11,7 +11,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const WikiSpacesGetListOperate: ResourceOperations = {
 	name: '获取知识空间列表',
 	value: 'wiki:spaces:list',
-	order: 100,
+	order: 10,
 	options: [
 		{
 			displayName: 'Return All',

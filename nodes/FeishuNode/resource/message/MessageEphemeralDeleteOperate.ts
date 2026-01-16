@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const MessageEphemeralDeleteOperate: ResourceOperations = {
 	name: '删除仅特定人可见的消息卡片',
 	value: 'message:ephemeralDelete',
+	order: 130,
 	options: [
 		{
 			displayName: '消息ID',

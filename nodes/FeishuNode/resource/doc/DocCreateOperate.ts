@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const DocCreateOperate: ResourceOperations = {
 	name: '创建文档',
 	value: 'doc:create',
+	order: 10,
 	options: [
 		{
 			displayName: '文档标题',

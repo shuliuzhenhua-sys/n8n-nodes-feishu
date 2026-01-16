@@ -5,6 +5,7 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 export default {
 	name: '删除共享日历',
 	value: 'calendar:delete',
+	order: 50,
 	options: [
 		{
 			displayName: '日历 ID',

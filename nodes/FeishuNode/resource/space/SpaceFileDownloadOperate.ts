@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const SpaceFileDownloadOperate: ResourceOperations = {
 	name: '下载文件',
 	value: 'space:fileDownload',
+	order: 80,
 	options: [
 		{
 			displayName: '文件Token',

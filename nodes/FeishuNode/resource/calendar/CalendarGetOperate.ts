@@ -5,6 +5,7 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 export default {
 	name: '查询日历信息',
 	value: 'calendar:get',
+	order: 20,
 	options: [
 		{
 			displayName: '日历 ID',

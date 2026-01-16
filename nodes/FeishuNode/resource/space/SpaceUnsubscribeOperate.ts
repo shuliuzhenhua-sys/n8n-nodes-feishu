@@ -5,6 +5,7 @@ import { ResourceOperations } from '../../../help/type/IResource';
 const SpaceUnsubscribeOperate: ResourceOperations = {
 	name: '取消云文档事件订阅',
 	value: 'space:unsubscribe',
+	order: 40,
 	options: [
 		{
 			displayName: '文档Token',

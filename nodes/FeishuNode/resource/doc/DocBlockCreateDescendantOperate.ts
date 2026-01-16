@@ -6,6 +6,7 @@ import NodeUtils from '../../../help/utils/NodeUtils';
 const DocBlockCreateOperate: ResourceOperations = {
 	name: '创建嵌套块',
 	value: 'doc:block:createDescendant',
+	order: 80,
 	options: [
 		{
 			displayName: '文档 ID',

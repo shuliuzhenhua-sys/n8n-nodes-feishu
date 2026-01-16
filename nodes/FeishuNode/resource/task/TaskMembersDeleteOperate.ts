@@ -6,7 +6,7 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 export default {
 	name: '移除任务成员',
 	value: 'task:remove_members',
-	order: 90,
+	order: 60,
 	options: [
 		{
 			displayName: '任务ID',
