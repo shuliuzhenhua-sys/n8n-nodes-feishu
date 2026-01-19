@@ -1,6 +1,0 @@
-.DS_Store
-*.tsbuildinfo
-*.map
-**/*.map
-*.d.ts
-**/*.d.ts
