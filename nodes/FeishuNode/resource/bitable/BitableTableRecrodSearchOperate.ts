@@ -71,7 +71,13 @@ export default {
 			name: 'body',
 			type: 'json',
 			required: true,
-			default: JSON.stringify({}, null, 2),
+			default: JSON.stringify({
+				automatic_fields: false,
+				filter: {
+					conjunction: 'and',
+					conditions: [] // 空条件，会返回所有记录
+				}
+			}, null, 2),
 			description:
 				'参考：https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/bitable-v1/app-table-record/search#requestBody',
 		},

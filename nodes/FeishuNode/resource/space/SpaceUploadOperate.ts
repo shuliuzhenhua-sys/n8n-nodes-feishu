@@ -1,6 +1,6 @@
-import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, IHttpRequestOptions, NodeOperationError } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
-import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
+import { ResourceOperations } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
 import FormData from 'form-data';
 
@@ -110,6 +110,6 @@ export default {
 			method: 'POST',
 			url: `/open-apis/drive/v1/medias/upload_all`,
 			body: formData,
-		} as IExtendedHttpRequestOptions);
+		} as IHttpRequestOptions);
 	},
 } as ResourceOperations;

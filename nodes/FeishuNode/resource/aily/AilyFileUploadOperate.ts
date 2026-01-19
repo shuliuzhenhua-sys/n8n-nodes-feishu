@@ -1,6 +1,6 @@
-import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, IHttpRequestOptions, NodeOperationError } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
-import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
+import { ResourceOperations } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
 import FormData from 'form-data';
 
@@ -69,7 +69,7 @@ const AilyFileUploadOperate: ResourceOperations = {
 		formData.append('file', file.value);
 
 		// 构建请求选项
-		const requestOptions: IExtendedHttpRequestOptions = {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'POST',
 			url: '/open-apis/aily/v1/files',
 			body: formData,

@@ -1,6 +1,6 @@
-import { IDataObject, IExecuteFunctions, INodeProperties } from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, IHttpRequestOptions, INodeProperties } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
-import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
+import { ResourceOperations } from '../../../help/type/IResource';
 
 const UserBatchGetOperate: ResourceOperations = {
 	name: '批量获取用户信息',
@@ -171,13 +171,11 @@ const UserBatchGetOperate: ResourceOperations = {
 		};
 
 		// 构建请求选项
-		const requestOptions: IExtendedHttpRequestOptions = {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'GET',
 			url: '/open-apis/contact/v3/users/batch',
 			qs,
-			qsStringifyOptions: {
-				arrayFormat: 'repeat',
-			},
+			arrayFormat: 'repeat',
 		};
 
 		// 添加 user_ids 数组参数

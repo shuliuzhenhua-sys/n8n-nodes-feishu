@@ -1,6 +1,6 @@
-import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, IHttpRequestOptions, NodeOperationError } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
-import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
+import { ResourceOperations } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
 import FormData from 'form-data';
 
@@ -158,7 +158,7 @@ const SpaceChunkUploadOperate: ResourceOperations = {
 		const timeout = options.timeout || 0;
 
 		// 构建请求选项
-		const requestOptions: IExtendedHttpRequestOptions = { method: 'POST', url: '' };
+		const requestOptions: IHttpRequestOptions = { method: 'POST', url: '' };
 		if (timeout) {
 			requestOptions.timeout = timeout;
 		}
@@ -214,7 +214,7 @@ const SpaceChunkUploadOperate: ResourceOperations = {
 					url: '/open-apis/drive/v1/files/upload_part',
 					body: formData,
 					timeout: requestOptions.timeout,
-				} as IExtendedHttpRequestOptions);
+				} as IHttpRequestOptions);
 
 				return {
 					seq,

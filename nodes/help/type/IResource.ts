@@ -2,20 +2,9 @@ import {
 	INodePropertyOptions,
 	INodeExecutionData,
 	INodeProperties,
-	IHttpRequestOptions,
 } from 'n8n-workflow';
 import { IDataObject, type IExecuteFunctions } from 'n8n-workflow';
 import { OutputType } from './enums';
-
-/**
- * 扩展的 HTTP 请求选项类型
- * 支持 formData, resolveWithFullResponse 等额外属性
- */
-export interface IExtendedHttpRequestOptions extends IHttpRequestOptions {
-	formData?: IDataObject | any;
-	resolveWithFullResponse?: boolean;
-	qsStringifyOptions?: { arrayFormat: string };
-}
 
 /**
  * 操作返回结果类型

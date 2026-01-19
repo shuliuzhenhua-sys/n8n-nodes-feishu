@@ -1,6 +1,6 @@
-import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, IHttpRequestOptions, NodeOperationError } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
-import { ResourceOperations, IExtendedHttpRequestOptions } from '../../../help/type/IResource';
+import { ResourceOperations } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
 import FormData from 'form-data';
 
@@ -117,7 +117,7 @@ const SpaceFileUploadOperate: ResourceOperations = {
 			url: '/open-apis/drive/v1/files/upload_all',
 			body: formData,
 			timeout: options.timeout,
-		} as IExtendedHttpRequestOptions);
+		} as IHttpRequestOptions);
 	},
 };
 
