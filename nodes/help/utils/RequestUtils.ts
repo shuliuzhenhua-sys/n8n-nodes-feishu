@@ -3,6 +3,24 @@ import { Credentials } from '../type/enums';
 
 
 class RequestUtils {
+	/**
+	 * 处理飞书 API 响应
+	 * - 二进制数据直接返回
+	 * - 检查 code 是否为 0，非 0 则抛出错误
+	 * - 返回 data 字段或原始响应
+	 */
+	private static processResponse(res: any) {
+		// 对于二进制数据（如文件下载），直接返回
+		if (res instanceof Buffer || res instanceof ArrayBuffer || res instanceof Uint8Array) {
+			return res;
+		}
+
+		if (res.code !== 0) {
+			throw new Error(`Request Feishu API Error: ${res.code}, ${res.msg}`);
+		}
+		return res.data ?? res;
+	}
+
 	static async originRequest(
 		this: IExecuteFunctions,
 		options: IHttpRequestOptions,
@@ -48,18 +66,7 @@ class RequestUtils {
 
 		return RequestUtils.originRequest
 			.call(this, options)
-			.then((res) => {
-				// 对于二进制数据（如文件下载），直接返回
-				if (res instanceof Buffer || res instanceof ArrayBuffer || res instanceof Uint8Array) {
-					return res;
-				}
-
-				if (res.code !== 0) {
-					throw new Error(`Request Feishu API Error: ${res.code}, ${res.msg}`);
-				}
-
-				return res.data ?? res;
-			})
+			.then((res) => RequestUtils.processResponse(res))
 			.catch((error) => {
 				if (error.context && error.context.data) {
 					let errorData: any = {};
@@ -73,7 +80,9 @@ class RequestUtils {
 					const { code, msg, error: feishuError } = errorData;
 
 					if (code === 99991663) {
-						return RequestUtils.originRequest.call(this, options, true);
+						return RequestUtils.originRequest
+							.call(this, options, true)
+							.then((res) => RequestUtils.processResponse(res));
 					}
 
 					if (code !== 0) {
