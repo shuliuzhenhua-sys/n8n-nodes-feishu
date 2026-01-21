@@ -37,7 +37,6 @@ const MessageGetOperate: ResourceOperations = {
 				},
 			],
 			default: 'open_id',
-			description: '用户ID类型',
 		},
 		{
 			displayName: 'Options',

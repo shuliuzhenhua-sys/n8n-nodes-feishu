@@ -40,8 +40,7 @@ const MessageResourceDownloadOperate: ResourceOperations = {
 				},
 			],
 			required: true,
-			default: 'image',
-			description: '资源类型',
+			default: 'image'
 		},
 		{
 			displayName: 'Put Output File in Field',
