@@ -72,13 +72,33 @@ const SpaceExportOperate: ResourceOperations = {
 			options: [
 				{ name: 'Microsoft Word 格式 (DOCX)', value: 'docx' },
 				{ name: 'PDF 格式 (PDF)', value: 'pdf' },
-				{ name: 'Microsoft Excel 格式 (XLSX)', value: 'xlsx' },
-				{ name: 'CSV 格式 (CSV)', value: 'csv' },
 			],
 			required: true,
 			default: 'docx',
 			description:
-				'将云文档导出为本地文件后的扩展名。doc/docx 支持导出 docx/pdf；sheet/bitable 支持导出 xlsx/csv。',
+				'将云文档导出为本地文件后的扩展名。导出为 Word 文档时，文档内资源大小总计不可超过 1 GB；导出为 PDF 文件时，文档内资源大小总计不可超过 128 MB。',
+			displayOptions: {
+				show: {
+					type: ['doc', 'docx'],
+				},
+			},
+		},
+		{
+			displayName: '导出文件格式',
+			name: 'file_extension',
+			type: 'options',
+			options: [
+				{ name: 'Microsoft Excel 格式 (XLSX)', value: 'xlsx' },
+				{ name: 'CSV 格式 (CSV)', value: 'csv' },
+			],
+			required: true,
+			default: 'xlsx',
+			description: '将云文档导出为本地文件后的扩展名。',
+			displayOptions: {
+				show: {
+					type: ['sheet', 'bitable'],
+				},
+			},
 		},
 		{
 			displayName: '子表ID',
