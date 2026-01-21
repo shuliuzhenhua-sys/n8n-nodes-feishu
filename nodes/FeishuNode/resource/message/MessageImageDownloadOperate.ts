@@ -71,11 +71,7 @@ const MessageImageDownloadOperate: ResourceOperations = {
 			binary: {
 				[binaryPropertyName]: binaryData,
 			},
-			json: {
-				image_key,
-				fileName,
-				mimeType,
-			},
+			json: binaryData,
 		};
 	},
 };

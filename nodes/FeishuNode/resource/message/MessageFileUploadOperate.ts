@@ -49,14 +49,6 @@ const MessageFileUploadOperate: ResourceOperations = {
 			description: '待上传的文件类型。若上传文件不属于以上枚举类型，可以使用 stream 格式',
 		},
 		{
-			displayName: '文件名',
-			name: 'file_name',
-			type: 'string',
-			required: true,
-			default: '',
-			description: '带后缀的文件名，例如：测试视频.mp4',
-		},
-		{
 			displayName: 'Input Data Field Name',
 			name: 'fileFieldName',
 			type: 'string',
@@ -72,6 +64,13 @@ const MessageFileUploadOperate: ResourceOperations = {
 			default: {},
 			options: [
 				{
+					displayName: '自定义文件名',
+					name: 'file_name',
+					type: 'string',
+					default: '',
+					description: '带后缀的文件名，例如：测试视频.mp4。不填则自动使用原始文件名',
+				},
+				{
 					displayName: '文件时长（毫秒）',
 					name: 'duration',
 					type: 'number',
@@ -83,9 +82,11 @@ const MessageFileUploadOperate: ResourceOperations = {
 	],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 		const file_type = this.getNodeParameter('file_type', index) as string;
-		const file_name = this.getNodeParameter('file_name', index) as string;
 		const fileFieldName = this.getNodeParameter('fileFieldName', index) as string;
-		const options = this.getNodeParameter('options', index, {}) as { duration?: number };
+		const options = this.getNodeParameter('options', index, {}) as {
+			file_name?: string;
+			duration?: number;
+		};
 
 		const file = (await NodeUtils.buildUploadFileData.call(this, fileFieldName, index)) as any;
 
@@ -96,8 +97,11 @@ const MessageFileUploadOperate: ResourceOperations = {
 			);
 		}
 
+		// 优先使用用户设置的文件名，否则使用原始文件名
+		const file_name = options.file_name || file.options?.filename;
+
 		if (!file_name) {
-			throw new NodeOperationError(this.getNode(), '文件名不能为空');
+			throw new NodeOperationError(this.getNode(), '文件名不能为空，请在选项中设置文件名');
 		}
 
 		const formData = new FormData();

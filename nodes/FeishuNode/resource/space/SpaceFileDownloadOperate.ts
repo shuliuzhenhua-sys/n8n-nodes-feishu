@@ -73,11 +73,7 @@ const SpaceFileDownloadOperate: ResourceOperations = {
 			binary: {
 				[binaryPropertyName]: binaryData,
 			},
-			json: {
-				file_token,
-				fileName,
-				mimeType,
-			},
+			json: binaryData,
 		};
 	},
 };

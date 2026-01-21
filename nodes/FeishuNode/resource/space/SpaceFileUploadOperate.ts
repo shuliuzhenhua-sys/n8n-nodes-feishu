@@ -33,7 +33,7 @@ const SpaceFileUploadOperate: ResourceOperations = {
 			default: {},
 			options: [
 				{
-					displayName: '文件名',
+					displayName: '自定义文件名',
 					name: 'file_name',
 					type: 'string',
 					default: '',

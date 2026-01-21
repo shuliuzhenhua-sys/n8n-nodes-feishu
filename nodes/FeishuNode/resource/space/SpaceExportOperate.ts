@@ -260,18 +260,10 @@ const SpaceExportOperate: ResourceOperations = {
 		const binaryData = await this.helpers.prepareBinaryData(buffer, fileName);
 
 		return {
-			json: {
-				ticket,
-				file_token: fileToken,
-				file_name: exportResult.file_name,
-				file_extension: exportResult.file_extension,
-				file_size: exportResult.file_size,
-				type: exportResult.type,
-				fileName,
-			},
 			binary: {
 				[binaryPropertyName]: binaryData,
 			},
+			json: binaryData,
 		};
 	},
 };
