@@ -68,32 +68,46 @@ class RequestUtils {
 			.call(this, options)
 			.then((res) => RequestUtils.processResponse(res))
 			.catch((error) => {
-				if (error.context && error.context.data) {
-					let errorData: any = {};
-					if (error.context.data.code) {
-						errorData = error.context.data;
+
+			if (error.context && error.context.data) {
+				let errorData: any = {};
+
+				if (error.context.data.code) {
+					// 已经是解析好的对象
+					errorData = error.context.data;
+				} else {
+					// 尝试从 Buffer 解析 JSON（下载资源操作返回的是 arraybuffer 格式）
+					const buffer = Buffer.from(error.context.data);
+					if (buffer.length > 0) {
+						try {
+							errorData = JSON.parse(buffer.toString('utf-8'));
+						} catch {
+							// JSON 解析失败，直接抛出原始错误
+							throw error;
+						}
 					} else {
-						// the context data is in array buffer format for download resource operation
-						errorData = JSON.parse(Buffer.from(error.context.data).toString('utf-8'));
-					}
-
-					const { code, msg, error: feishuError } = errorData;
-
-					if (code === 99991663) {
-						return RequestUtils.originRequest
-							.call(this, options, true)
-							.then((res) => RequestUtils.processResponse(res));
-					}
-
-					if (code !== 0) {
-						throw new NodeApiError(this.getNode(), error as JsonObject, {
-							message: `Request Feishu API Error: ${code}, ${msg}`,
-							description: feishuError?.troubleshooter || '',
-						});
+						// Buffer 为空（如 404 等 HTTP 错误），直接抛出原始错误
+						throw error;
 					}
 				}
 
-				throw error;
+				const { code, msg, error: feishuError } = errorData;
+
+				if (code === 99991663) {
+					return RequestUtils.originRequest
+						.call(this, options, true)
+						.then((res) => RequestUtils.processResponse(res));
+				}
+
+				if (code !== 0) {
+					throw new NodeApiError(this.getNode(), error as JsonObject, {
+						message: `Request Feishu API Error: ${code}, ${msg}`,
+						description: feishuError?.troubleshooter || '',
+					});
+				}
+			}
+
+			throw error;
 			});
 	}
 }
