@@ -45,7 +45,7 @@ export class EventDispatcher {
 
 		this.registerAppTicketHandle();
 
-		this.logger.info('event-dispatch is ready');
+		this.logger.debug('[FeishuNode:event] event-dispatch is ready');
 	}
 
 	private registerAppTicketHandle() {
@@ -57,9 +57,9 @@ export class EventDispatcher {
 					await this.cache.set(CAppTicket, app_ticket as string, undefined, {
 						namespace: app_id as string,
 					});
-					this.logger.debug('set app ticket');
+					this.logger.debug('[FeishuNode:event] set app ticket');
 				} else {
-					this.logger.warn('response not include app ticket');
+					this.logger.warn('[FeishuNode:event] response not include app ticket');
 				}
 			},
 		});
@@ -68,16 +68,16 @@ export class EventDispatcher {
 	register<T = object>(handles: IHandles & T) {
 		Object.keys(handles).forEach((key) => {
 			if (this.handles.has(key) && key !== CAppTicketHandle) {
-				this.logger.debug(`this ${key} handle is registered`);
+				this.logger.debug(`[FeishuNode:event] this ${key} handle is registered`);
 			}
 
 			const handle = handles[key as keyof IHandles];
 			if (handle) {
 				this.handles.set(key, handle);
 			} else {
-				this.logger.warn(`Handle for key ${key} is undefined and will not be registered`);
+				this.logger.warn(`[FeishuNode:event] Handle for key ${key} is undefined and will not be registered`);
 			}
-			this.logger.debug(`register ${key} handle`);
+			this.logger.debug(`[FeishuNode:event] register ${key} handle`);
 		});
 
 		return this;
@@ -87,21 +87,21 @@ export class EventDispatcher {
 		const needCheck = params?.needCheck !== false;
 
 		if (needCheck && !this.requestHandle?.checkIsEventValidated(data)) {
-			this.logger.warn('event verification failed');
+			this.logger.warn('[FeishuNode:event] event verification failed');
 			return undefined;
 		}
 
 		const targetData = this.requestHandle?.parse(data);
-		this.logger.debug(`Event data: ${JSON.stringify(targetData)}`);
+		this.logger.debug(`[FeishuNode:event] Event data: ${JSON.stringify(targetData)}`);
 
 		if (this.isAnyEvent) {
 			const handler = this.handles.get(ANY_EVENT);
 			if (!handler) {
-				this.logger.warn(`no ${ANY_EVENT} handle`);
+				this.logger.warn(`[FeishuNode:event] no ${ANY_EVENT} handle`);
 				return undefined;
 			}
 			const ret = await handler(targetData);
-			this.logger.info(`execute any_event handle`);
+			this.logger.debug(`[FeishuNode:event] execute any_event handle`);
 			return ret;
 		}
 
@@ -109,11 +109,11 @@ export class EventDispatcher {
 		const handler = this.handles.get(type);
 		if (handler) {
 			const ret = await handler(targetData);
-			this.logger.info(`execute ${type} handle`);
+			this.logger.debug(`[FeishuNode:event] execute ${type} handle`);
 			return ret;
 		}
 
-		this.logger.warn(`no ${type} handle`);
+		this.logger.warn(`[FeishuNode:event] no ${type} handle`);
 
 		return undefined;
 	}

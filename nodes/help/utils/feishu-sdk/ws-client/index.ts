@@ -88,7 +88,7 @@ export class WSClient {
 
 			if (code !== ErrorCode.ok) {
 				this.logger.error(
-					`[ws] code: ${code}, ${code === ErrorCode.system_busy ? msg : 'system busy'}`,
+					`[FeishuNode:ws] code: ${code}, ${code === ErrorCode.system_busy ? msg : 'system busy'}`,
 				);
 				if (code === ErrorCode.system_busy || code === ErrorCode.internal_error) {
 					return false;
@@ -111,11 +111,11 @@ export class WSClient {
 				reconnectNonce: ClientConfig.ReconnectNonce * 1000,
 			});
 
-			this.logger.debug(`[ws] get connect config success, ws url: ${connectUrl}`);
+			this.logger.debug(`[FeishuNode:ws] get connect config success, ws url: ${connectUrl}`);
 
 			return true;
 		} catch (e) {
-			this.logger.error('[ws]', (e as any)?.message || 'system busy');
+			this.logger.error('[FeishuNode:ws]', (e as any)?.message || 'system busy');
 			return false;
 		}
 	}
@@ -129,7 +129,7 @@ export class WSClient {
 			const { agent } = this;
 			wsInstance = new WebSocket(connectUrl, { agent });
 		} catch (e) {
-			this.logger.error('[ws] new WebSocket error');
+			this.logger.error('[FeishuNode:ws] new WebSocket error');
 		}
 
 		if (!wsInstance) {
@@ -138,13 +138,13 @@ export class WSClient {
 
 		return new Promise((resolve) => {
 			wsInstance.on('open', () => {
-				this.logger.debug('[ws] ws connect success');
+				this.logger.debug('[FeishuNode:ws] ws connect success');
 				this.wsConfig.setWSInstance(wsInstance);
 				this.pingLoop();
 				resolve(true);
 			});
 			wsInstance.on('error', () => {
-				this.logger.error('[ws] ws connect failed');
+				this.logger.error('[FeishuNode:ws] ws connect failed');
 				resolve(false);
 			});
 		});
@@ -152,7 +152,7 @@ export class WSClient {
 
 	private async reConnect(isStart: boolean = false) {
 		if (this.isConnecting) {
-			this.logger.debug('[ws] repeat connection');
+			this.logger.debug('[FeishuNode:ws] repeat connection');
 			return;
 		}
 
@@ -191,10 +191,10 @@ export class WSClient {
 				this.isConnecting = false;
 			}
 			if (!isSuccess) {
-				this.logger.error('[ws] connect failed');
+				this.logger.error('[FeishuNode:ws] connect failed');
 				await this.reConnect();
 			}
-			this.logger.info('[ws] ws client ready');
+			this.logger.info('[FeishuNode:ws] ws client ready');
 			return;
 		}
 
@@ -205,7 +205,7 @@ export class WSClient {
 			return;
 		}
 
-		this.logger.info('[ws] reconnect');
+		this.logger.debug('[FeishuNode:ws] reconnect');
 
 		if (wsInstance) {
 			wsInstance?.terminate();
@@ -220,12 +220,12 @@ export class WSClient {
 				const isSuccess = await tryConnect();
 				// if reconnectCount < 0, the reconnect time is infinite
 				if (isSuccess) {
-					this.logger.debug('[ws] reconnect success');
+					this.logger.debug('[FeishuNode:ws] reconnect success');
 					this.isConnecting = false;
 					return;
 				}
 
-				this.logger.info(`[ws] unable to connect to the server after trying ${count} times`);
+				this.logger.info(`[FeishuNode:ws] unable to connect to the server after trying ${count} times`);
 
 				if (reconnectCount >= 0 && count >= reconnectCount) {
 					this.isConnecting = false;
@@ -259,7 +259,7 @@ export class WSClient {
 				LogID: 0,
 			};
 			this.sendMessage(frame);
-			this.logger.info('[ws] ping success');
+			this.logger.debug('[FeishuNode:ws] ping success');
 		}
 
 		this.pingInterval = setTimeout(this.pingLoop.bind(this), pingInterval);
@@ -282,15 +282,15 @@ export class WSClient {
 		});
 
 		wsInstance?.on('error', (e) => {
-			this.logger.error('[ws] ws error');
+			this.logger.error('[FeishuNode:ws] ws error');
 		});
 
 		wsInstance?.on('close', () => {
 			if (this.shouldReconnect) {
-				this.logger.info('[ws] client closed unexpectedly, try to reconnect');
+				this.logger.info('[FeishuNode:ws] client closed unexpectedly, try to reconnect');
 				this.reConnect();
 			} else {
-				this.logger.info('[ws] client closed');
+				this.logger.debug('[FeishuNode:ws] client closed');
 			}
 		});
 	}
@@ -304,7 +304,7 @@ export class WSClient {
 		}
 
 		if (type === MessageType.pong && payload) {
-			this.logger.info('[ws] receive pong');
+			this.logger.debug('[FeishuNode:ws] receive pong');
 			const dataString = new TextDecoder('utf-8').decode(payload);
 			const { PingInterval, ReconnectCount, ReconnectInterval, ReconnectNonce } =
 				JSON.parse(dataString);
@@ -316,7 +316,7 @@ export class WSClient {
 				reconnectNonce: ReconnectNonce * 1000,
 			});
 
-			this.logger.info('[ws] update wsConfig with pong data');
+			this.logger.debug('[FeishuNode:ws] update wsConfig with pong data');
 		}
 	}
 
@@ -348,7 +348,7 @@ export class WSClient {
 		}
 
 		this.logger.debug(
-			`[ws] receive message, message_type: ${type}; message_id: ${message_id}; trace_id: ${trace_id}; data: ${mergedData.data}`,
+			`[FeishuNode:ws] receive message, message_type: ${type}; message_id: ${message_id}; trace_id: ${trace_id}; data: ${mergedData.data}`,
 		);
 
 		const respPayload: { code: number; data?: string } = {
@@ -365,7 +365,7 @@ export class WSClient {
 			respPayload.code = HttpStatusCode.internal_server_error;
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			this.logger.error(
-				`[ws] invoke event failed, message_type: ${type}; message_id: ${message_id}; trace_id: ${trace_id}; error: ${errorMessage}`,
+				`[FeishuNode:ws] invoke event failed, message_type: ${type}; message_id: ${message_id}; trace_id: ${trace_id}; error: ${errorMessage}`,
 			);
 		}
 		const endTime = Date.now();
@@ -383,7 +383,7 @@ export class WSClient {
 			const resp = pbbp2.Frame.encode(data).finish();
 			this.wsConfig.getWSInstance()?.send(resp, (err) => {
 				if (err) {
-					this.logger.error('[ws] send data failed');
+					this.logger.error('[FeishuNode:ws] send data failed');
 				}
 			});
 		}
@@ -397,7 +397,7 @@ export class WSClient {
 		const { eventDispatcher } = params;
 
 		if (!eventDispatcher) {
-			this.logger.error('[ws] client need to start with a eventDispatcher');
+			this.logger.error('[FeishuNode:ws] client need to start with a eventDispatcher');
 			return;
 		}
 		this.eventDispatcher = eventDispatcher;
