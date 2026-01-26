@@ -10,8 +10,8 @@ import {
 } from 'n8n-workflow';
 import crypto from 'crypto';
 import { Credentials } from '../help/type/enums';
-import { WSClient } from '../help/utils/lark-sdk/ws-client';
-import { EventDispatcher } from '../help/utils/lark-sdk/handler/event-handler';
+import { WSClient } from '../help/utils/feishu-sdk/ws-client';
+import { EventDispatcher } from '../help/utils/feishu-sdk/handler/event-handler';
 import { triggerEventProperty } from '../help/utils/properties';
 import { feishuResponseManager } from '../help/utils/FeishuResponseManager';
 

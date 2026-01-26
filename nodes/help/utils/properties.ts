@@ -1,5 +1,5 @@
 import { INodeProperties } from 'n8n-workflow';
-import { ANY_EVENT } from './lark-sdk/consts';
+import { ANY_EVENT } from './feishu-sdk/consts';
 
 /**
  * 触发事件类型枚举
