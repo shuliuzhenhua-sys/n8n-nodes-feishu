@@ -3,20 +3,19 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
 import FormData from 'form-data';
+import {
+	fileFieldNameOption,
+	fileNameOption,
+	batchingOption,
+	timeoutOption,
+} from '../../../help/utils/sharedOptions';
 
 const AilyFileUploadOperate: ResourceOperations = {
 	name: '文件上传',
 	value: 'aily:fileUpload',
 	order: 20,
 	options: [
-		{
-			displayName: 'Input Data Field Name',
-			name: 'fileFieldName',
-			type: 'string',
-			default: 'data',
-			required: true,
-			description: 'The name of the incoming field containing the binary file data to be processed',
-		},
+		fileFieldNameOption,
 		{
 			displayName: 'Options',
 			name: 'options',
@@ -25,23 +24,11 @@ const AilyFileUploadOperate: ResourceOperations = {
 			default: {},
 			options: [
 				{
-					displayName: '自定义文件名',
-					name: 'file_name',
-					type: 'string',
-					default: '',
+					...fileNameOption,
 					description: '带后缀的文件名，例如：test.pdf。不填则使用原始文件名',
 				},
-				{
-					displayName: 'Timeout',
-					name: 'timeout',
-					type: 'number',
-					typeOptions: {
-						minValue: 0,
-					},
-					default: 0,
-					description:
-						'等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。',
-				},
+				batchingOption,
+				timeoutOption,
 			],
 		},
 	],

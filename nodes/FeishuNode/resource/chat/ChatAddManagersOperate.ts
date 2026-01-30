@@ -7,6 +7,7 @@ import {
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
+import { batchingOption, timeoutOption, memberIdTypeOptions } from '../../../help/utils/sharedOptions';
 
 const ChatAddManagersOperate: ResourceOperations = {
 	name: '指定群管理员',
@@ -31,78 +32,14 @@ const ChatAddManagersOperate: ResourceOperations = {
 			description:
 				'要设置为管理员的 ID 列表，支持逗号分隔的字符串或通过表达式传入数组。ID 类型与查询参数 member_id_type 取值一致。如果是用户（member_id_type 为 user_id/open_id/union_id），推荐使用用户的 open_id；如果是机器人（member_id_type 为 app_id），请使用应用的 App ID。普通群最多可指定 10 个管理员；超大群最多可指定 20 个管理员；单次请求指定机器人时，最多可指定 5 个机器人。',
 		},
-		{
-			displayName: '成员 ID 类型',
-			name: 'member_id_type',
-			type: 'options',
-			options: [
-				{ name: 'Open ID', value: 'open_id' },
-				{ name: 'Union ID', value: 'union_id' },
-				{ name: 'User ID', value: 'user_id' },
-				{ name: 'App ID', value: 'app_id' },
-			],
-			description: '用户 ID 类型。如果是用户，推荐使用 open_id；如果是机器人，需填写 app_id。',
-			default: 'open_id',
-		},
+		memberIdTypeOptions.withAppId,
 		{
 			displayName: 'Options',
 			name: 'options',
 			type: 'collection',
 			placeholder: 'Add option',
 			default: {},
-			options: [
-				{
-					displayName: 'Batching',
-					name: 'batching',
-					placeholder: 'Add Batching',
-					type: 'fixedCollection',
-					typeOptions: {
-						multipleValues: false,
-					},
-					default: {
-						batch: {},
-					},
-					options: [
-						{
-							displayName: 'Batching',
-							name: 'batch',
-							values: [
-								{
-									displayName: 'Items per Batch',
-									name: 'batchSize',
-									type: 'number',
-									typeOptions: {
-										minValue: 1,
-									},
-									default: 50,
-									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
-								},
-								{
-									displayName: 'Batch Interval (Ms)',
-									name: 'batchInterval',
-									type: 'number',
-									typeOptions: {
-										minValue: 0,
-									},
-									default: 1000,
-									description: '每批请求之间的时间（毫秒）。0 表示禁用。',
-								},
-							],
-						},
-					],
-				},
-				{
-					displayName: 'Timeout',
-					name: 'timeout',
-					type: 'number',
-					typeOptions: {
-						minValue: 0,
-					},
-					default: 0,
-					description:
-						'等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。',
-				},
-			],
+			options: [batchingOption, timeoutOption],
 		},
 	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {

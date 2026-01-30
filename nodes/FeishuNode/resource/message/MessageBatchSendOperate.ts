@@ -1,7 +1,8 @@
-import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, NodeOperationError, IHttpRequestOptions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
+import { commonOptions } from '../../../help/utils/sharedOptions';
 
 const MessageBatchSendOperate: ResourceOperations = {
 	name: '批量发送消息',
@@ -141,6 +142,7 @@ const MessageBatchSendOperate: ResourceOperations = {
 			default: '[]',
 			description: '用户 union_id 列表，支持 JSON 数组或逗号分隔的字符串。列表长度不能超过200',
 		},
+		commonOptions,
 	],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 		const msg_type = this.getNodeParameter('msg_type', index) as string;
@@ -148,6 +150,9 @@ const MessageBatchSendOperate: ResourceOperations = {
 		const open_ids_input = this.getNodeParameter('open_ids', index);
 		const user_ids_input = this.getNodeParameter('user_ids', index);
 		const union_ids_input = this.getNodeParameter('union_ids', index);
+		const options = this.getNodeParameter('options', index, {}) as {
+			timeout?: number;
+		};
 
 		// 解析 ID 列表，支持数组或逗号分隔的字符串
 		const parseIds = (input: unknown, fieldName: string): string[] => {
@@ -255,11 +260,19 @@ const MessageBatchSendOperate: ResourceOperations = {
 			body.union_ids = union_ids;
 		}
 
-		return RequestUtils.request.call(this, {
+		// 构建请求选项
+		const requestOptions: IHttpRequestOptions = {
 			method: 'POST',
 			url: '/open-apis/message/v4/batch_send/',
 			body,
-		});
+		};
+
+		// 添加超时配置
+		if (options.timeout) {
+			requestOptions.timeout = options.timeout;
+		}
+
+		return RequestUtils.request.call(this, requestOptions);
 	},
 };
 

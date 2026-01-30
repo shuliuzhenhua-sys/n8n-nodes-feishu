@@ -3,6 +3,12 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
 import FormData from 'form-data';
+import {
+	fileFieldNameOption,
+	fileNameOption,
+	batchingOption,
+	timeoutOption,
+} from '../../../help/utils/sharedOptions';
 
 const SpaceFileUploadOperate: ResourceOperations = {
 	name: '上传文件',
@@ -18,14 +24,7 @@ const SpaceFileUploadOperate: ResourceOperations = {
 			default: '',
 			description: '云空间中文件夹的 token，获取方式见飞书文档',
 		},
-		{
-			displayName: 'Input Data Field Name',
-			name: 'fileFieldName',
-			type: 'string',
-			default: 'data',
-			required: true,
-			description: 'The name of the incoming field containing the binary file data to be processed',
-		},
+		fileFieldNameOption,
 		{
 			displayName: '选项',
 			name: 'options',
@@ -33,14 +32,7 @@ const SpaceFileUploadOperate: ResourceOperations = {
 			placeholder: '添加选项',
 			default: {},
 			options: [
-				{
-					displayName: '自定义文件名',
-					name: 'file_name',
-					type: 'string',
-					default: '',
-					description:
-						'自定义文件名，例如：demo.pdf。留空则从二进制数据中自动获取。最大长度250字符',
-				},
+				fileNameOption,
 				{
 					displayName: '文件校验和',
 					name: 'checksum',
@@ -48,17 +40,8 @@ const SpaceFileUploadOperate: ResourceOperations = {
 					default: '',
 					description: '文件的 Adler-32 校验和',
 				},
-				{
-					displayName: 'Timeout',
-					name: 'timeout',
-					type: 'number',
-					typeOptions: {
-						minValue: 0,
-					},
-					default: 0,
-					description:
-						'等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。',
-				},
+				batchingOption,
+				timeoutOption,
 			],
 		},
 	],

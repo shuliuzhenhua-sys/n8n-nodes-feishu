@@ -7,6 +7,7 @@ import {
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
+import { batchingOption, timeoutOption } from '../../../help/utils/sharedOptions';
 
 const AilyFileGetOperate: ResourceOperations = {
 	name: '读取文件基础信息',
@@ -35,17 +36,8 @@ const AilyFileGetOperate: ResourceOperations = {
 					default: false,
 					description: 'Whether to get the preview URL of the file based on file_id',
 				},
-				{
-					displayName: 'Timeout',
-					name: 'timeout',
-					type: 'number',
-					typeOptions: {
-						minValue: 0,
-					},
-					default: 0,
-					description:
-						'等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。',
-				},
+				batchingOption,
+				timeoutOption,
 			],
 		},
 	] as INodeProperties[],

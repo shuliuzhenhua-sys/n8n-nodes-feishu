@@ -7,6 +7,7 @@ import {
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
+import { batchingOption, timeoutOption } from '../../../help/utils/sharedOptions';
 
 // 导入任务状态枚举
 const JOB_STATUS = {
@@ -162,17 +163,8 @@ const SpaceImportOperate: ResourceOperations = {
 					default: 60,
 					description: '查询导入任务状态的最大轮询次数。超过后将抛出超时错误。',
 				},
-				{
-					displayName: 'Timeout',
-					name: 'timeout',
-					type: 'number',
-					typeOptions: {
-						minValue: 0,
-					},
-					default: 0,
-					description:
-						'等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。',
-				},
+				batchingOption,
+				timeoutOption,
 			],
 		},
 	] as INodeProperties[],

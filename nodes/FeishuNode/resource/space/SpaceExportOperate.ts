@@ -7,6 +7,11 @@ import {
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
+import {
+	fileNameOption,
+	batchingOption,
+	timeoutOption,
+} from '../../../help/utils/sharedOptions';
 
 // 导出任务状态枚举
 const JOB_STATUS = {
@@ -130,10 +135,7 @@ const SpaceExportOperate: ResourceOperations = {
 			default: {},
 			options: [
 				{
-					displayName: '自定义文件名',
-					name: 'fileName',
-					type: 'string',
-					default: '',
+					...fileNameOption,
 					description: '自定义保存的文件名（包含扩展名，如 myfile.pdf）。留空则使用原文档名称。',
 				},
 				{
@@ -156,17 +158,8 @@ const SpaceExportOperate: ResourceOperations = {
 					default: 60,
 					description: '查询导出任务状态的最大轮询次数。超过后将抛出超时错误。',
 				},
-				{
-					displayName: 'Timeout',
-					name: 'timeout',
-					type: 'number',
-					typeOptions: {
-						minValue: 0,
-					},
-					default: 0,
-					description:
-						'等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。',
-				},
+				batchingOption,
+				timeoutOption,
 			],
 		},
 	] as INodeProperties[],
@@ -177,7 +170,8 @@ const SpaceExportOperate: ResourceOperations = {
 		const sub_id = this.getNodeParameter('sub_id', index, '') as string;
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index, 'data') as string;
 		const options = this.getNodeParameter('options', index, {}) as {
-			fileName?: string;
+			file_name?: string;
+			fileName?: string; // 兼容旧数据
 			pollInterval?: number;
 			maxPolls?: number;
 			timeout?: number;
@@ -276,7 +270,8 @@ const SpaceExportOperate: ResourceOperations = {
 		const fileExtension = (exportResult.file_extension as string) || file_extension;
 		const baseName = (exportResult.file_name as string) || 'exported_file';
 		const defaultFileName = `${baseName}.${fileExtension}`;
-		const fileName = options.fileName?.trim() || defaultFileName;
+		// 兼容旧数据：优先使用 file_name，其次使用 fileName
+		const fileName = (options.file_name || options.fileName)?.trim() || defaultFileName;
 
 		const binaryData = await this.helpers.prepareBinaryData(buffer, fileName);
 

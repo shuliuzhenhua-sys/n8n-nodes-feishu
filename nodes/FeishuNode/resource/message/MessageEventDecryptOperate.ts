@@ -1,6 +1,7 @@
 import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
 import { ResourceOperations } from '../../../help/type/IResource';
 import { decryptFeishuEvent } from '../../../help/utils/FeishuDecryptUtils';
+import { commonOptions } from '../../../help/utils/sharedOptions';
 
 const MessageEventDecryptOperate: ResourceOperations = {
 	name: '解密事件消息',
@@ -27,6 +28,7 @@ const MessageEventDecryptOperate: ResourceOperations = {
 			default: '',
 			description: '加密的事件数据，即请求体中的 encrypt 字段',
 		},
+		commonOptions,
 	],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 		const encryptKey = this.getNodeParameter('encrypt_key', index) as string;

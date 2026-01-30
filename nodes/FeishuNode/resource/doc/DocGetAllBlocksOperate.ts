@@ -7,6 +7,7 @@ import {
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
+import { timeoutOption, paginationOptions } from '../../../help/utils/sharedOptions';
 
 const DocGetAllBlocksOperate: ResourceOperations = {
 	name: '获取文档所有块',
@@ -21,29 +22,8 @@ const DocGetAllBlocksOperate: ResourceOperations = {
 			default: '',
 			description: '文档的唯一标识。',
 		},
-		{
-			displayName: 'Return All',
-			name: 'returnAll',
-			type: 'boolean',
-			default: false,
-			description: 'Whether to return all results or only up to a given limit',
-		},
-		{
-			displayName: 'Limit',
-			name: 'limit',
-			type: 'number',
-			default: 50,
-			typeOptions: {
-				minValue: 1,
-				maxValue: 500,
-			},
-			displayOptions: {
-				show: {
-					returnAll: [false],
-				},
-			},
-			description: 'Max number of results to return',
-		},
+		paginationOptions.returnAll,
+		paginationOptions.limit(500),
 		{
 			displayName: '文档版本',
 			name: 'document_revision_id',
@@ -71,6 +51,14 @@ const DocGetAllBlocksOperate: ResourceOperations = {
 				},
 			],
 		},
+		{
+			displayName: 'Options',
+			name: 'options',
+			type: 'collection',
+			placeholder: 'Add option',
+			default: {},
+			options: [timeoutOption],
+		},
 	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject[]> {
 		const document_id = this.getNodeParameter('document_id', index) as string;
@@ -78,6 +66,9 @@ const DocGetAllBlocksOperate: ResourceOperations = {
 		const limit = this.getNodeParameter('limit', index, 500) as number;
 		const document_revision_id = this.getNodeParameter('document_revision_id', index, -1) as number;
 		const user_id_type = this.getNodeParameter('user_id_type', index, 'open_id') as string;
+		const options = this.getNodeParameter('options', index, {}) as {
+			timeout?: number;
+		};
 
 		// 统一的请求函数
 		const fetchPage = async (pageToken: string | undefined, pageSize: number) => {
@@ -96,6 +87,10 @@ const DocGetAllBlocksOperate: ResourceOperations = {
 				url: `/open-apis/docx/v1/documents/${document_id}/blocks`,
 				qs,
 			};
+
+			if (options.timeout) {
+				requestOptions.timeout = options.timeout;
+			}
 
 			const response = await RequestUtils.request.call(this, requestOptions);
 

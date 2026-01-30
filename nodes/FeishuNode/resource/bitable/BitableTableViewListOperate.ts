@@ -7,6 +7,7 @@ import {
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
+import { timeoutOption, paginationOptions } from '../../../help/utils/sharedOptions';
 
 export default {
 	name: '列出视图',
@@ -29,29 +30,8 @@ export default {
 			default: '',
 			description: '你可通过多维表格 URL 获取 table_id',
 		},
-		{
-			displayName: 'Return All',
-			name: 'returnAll',
-			type: 'boolean',
-			default: false,
-			description: 'Whether to return all results or only up to a given limit',
-		},
-		{
-			displayName: 'Limit',
-			name: 'limit',
-			type: 'number',
-			default: 50,
-			typeOptions: {
-				minValue: 1,
-				maxValue: 100,
-			},
-			displayOptions: {
-				show: {
-					returnAll: [false],
-				},
-			},
-			description: 'Max number of results to return',
-		},
+		paginationOptions.returnAll,
+		paginationOptions.limit(100),
 		{
 			displayName: '用户 ID 类型',
 			name: 'user_id_type',
@@ -72,6 +52,14 @@ export default {
 				},
 			],
 		},
+		{
+			displayName: 'Options',
+			name: 'options',
+			type: 'collection',
+			placeholder: 'Add option',
+			default: {},
+			options: [timeoutOption],
+		},
 	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject[]> {
 		const app_token = this.getNodeParameter('app_toke', index) as string;
@@ -79,6 +67,9 @@ export default {
 		const returnAll = this.getNodeParameter('returnAll', index, false) as boolean;
 		const limit = this.getNodeParameter('limit', index, 10) as number;
 		const user_id_type = this.getNodeParameter('user_id_type', index, 'open_id') as string;
+		const options = this.getNodeParameter('options', index, {}) as {
+			timeout?: number;
+		};
 
 		// 统一的请求函数
 		const fetchPage = async (pageToken: string | undefined, pageSize: number) => {
@@ -99,6 +90,10 @@ export default {
 				url: `/open-apis/bitable/v1/apps/${app_token}/tables/${table_id}/views`,
 				qs,
 			};
+
+			if (options.timeout) {
+				requestOptions.timeout = options.timeout;
+			}
 
 			const response = await RequestUtils.request.call(this, requestOptions);
 

@@ -1,7 +1,8 @@
-import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestOptions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
+import { batchingOption, timeoutOption } from '../../../help/utils/sharedOptions';
 
 export default {
 	name: '批量删除记录',
@@ -34,16 +35,30 @@ export default {
 			description:
 				'参考：https://open.feishu.cn/document/server-docs/docs/bitable-v1/app-table-record/batch_delete#requestBody',
 		},
-	],
+		{
+			displayName: 'Options',
+			name: 'options',
+			type: 'collection',
+			placeholder: 'Add option',
+			default: {},
+			options: [batchingOption, timeoutOption],
+		},
+	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 		const app_token = this.getNodeParameter('app_toke', index) as string;
 		const table_id = this.getNodeParameter('table_id', index) as string;
 		const body = NodeUtils.getNodeJsonData(this, 'body', index) as IDataObject;
+		const options = this.getNodeParameter('options', index, {}) as {
+			timeout?: number;
+		};
 
-		return RequestUtils.request.call(this, {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'POST',
 			url: `/open-apis/bitable/v1/apps/${app_token}/tables/${table_id}/records/batch_delete`,
 			body: body,
-		});
+		};
+		if (options.timeout) requestOptions.timeout = options.timeout;
+
+		return RequestUtils.request.call(this, requestOptions);
 	},
 } as ResourceOperations;

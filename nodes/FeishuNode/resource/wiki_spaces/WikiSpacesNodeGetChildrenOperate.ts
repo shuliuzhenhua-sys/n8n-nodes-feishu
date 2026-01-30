@@ -7,6 +7,7 @@ import {
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
+import { timeoutOption, paginationOptions } from '../../../help/utils/sharedOptions';
 
 const WikiSpacesNodeGetChildrenOperate: ResourceOperations = {
 	name: '获取知识空间子节点列表',
@@ -27,29 +28,8 @@ const WikiSpacesNodeGetChildrenOperate: ResourceOperations = {
 			type: 'string',
 			default: '',
 		},
-		{
-			displayName: 'Return All',
-			name: 'returnAll',
-			type: 'boolean',
-			default: false,
-			description: 'Whether to return all results or only up to a given limit',
-		},
-		{
-			displayName: 'Limit',
-			name: 'limit',
-			type: 'number',
-			default: 50,
-			typeOptions: {
-				minValue: 1,
-				maxValue: 50,
-			},
-			displayOptions: {
-				show: {
-					returnAll: [false],
-				},
-			},
-			description: 'Max number of results to return',
-		},
+		paginationOptions.returnAll,
+		paginationOptions.limit(50),
 		{
 			displayName: '递归获取所有子节点',
 			name: 'recursive',
@@ -88,12 +68,23 @@ const WikiSpacesNodeGetChildrenOperate: ResourceOperations = {
 			},
 			description: '返回数据的结构类型',
 		},
+		{
+			displayName: 'Options',
+			name: 'options',
+			type: 'collection',
+			placeholder: 'Add option',
+			default: {},
+			options: [timeoutOption],
+		},
 	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject[]> {
 		const returnAll = this.getNodeParameter('returnAll', index, false) as boolean;
 		const limit = this.getNodeParameter('limit', index, 50) as number;
 		const spaceId = this.getNodeParameter('space_id', index) as string;
 		const parentNodeToken = this.getNodeParameter('parent_node_token', index) as string;
+		const options = this.getNodeParameter('options', index, {}) as {
+			timeout?: number;
+		};
 
 		// 获取节点列表的请求函数
 		const fetchChildren = async (
@@ -116,53 +107,61 @@ const WikiSpacesNodeGetChildrenOperate: ResourceOperations = {
 					qs.page_token = pageToken;
 				}
 
-				const requestOptions: IHttpRequestOptions = {
-					method: 'GET' as IHttpRequestMethods,
-					url: `/open-apis/wiki/v2/spaces/${targetSpaceId}/nodes`,
-					qs,
-				};
-
-				const response = await RequestUtils.request.call(this, requestOptions);
-
-				const responseData = response as {
-					items?: IDataObject[];
-					page_token?: string;
-					has_more?: boolean;
-				};
-
-				allItems = allItems.concat(responseData.items || []);
-
-				if (!responseData.has_more || !responseData.page_token) {
-					break;
-				}
-
-				pageToken = responseData.page_token;
-			}
-
-			return allItems;
-		};
-
-		// 单次请求函数（用于非 returnAll 模式）
-		const fetchPage = async (pageToken: string | undefined, pageSize: number) => {
-			const qs: IDataObject = {
-				page_size: pageSize,
-			};
-
-			if (parentNodeToken) {
-				qs.parent_node_token = parentNodeToken;
-			}
-
-			if (pageToken) {
-				qs.page_token = pageToken;
-			}
-
 			const requestOptions: IHttpRequestOptions = {
 				method: 'GET' as IHttpRequestMethods,
-				url: `/open-apis/wiki/v2/spaces/${spaceId}/nodes`,
+				url: `/open-apis/wiki/v2/spaces/${targetSpaceId}/nodes`,
 				qs,
 			};
 
+			if (options.timeout) {
+				requestOptions.timeout = options.timeout;
+			}
+
 			const response = await RequestUtils.request.call(this, requestOptions);
+
+			const responseData = response as {
+				items?: IDataObject[];
+				page_token?: string;
+				has_more?: boolean;
+			};
+
+			allItems = allItems.concat(responseData.items || []);
+
+			if (!responseData.has_more || !responseData.page_token) {
+				break;
+			}
+
+			pageToken = responseData.page_token;
+		}
+
+		return allItems;
+	};
+
+	// 单次请求函数（用于非 returnAll 模式）
+	const fetchPage = async (pageToken: string | undefined, pageSize: number) => {
+		const qs: IDataObject = {
+			page_size: pageSize,
+		};
+
+		if (parentNodeToken) {
+			qs.parent_node_token = parentNodeToken;
+		}
+
+		if (pageToken) {
+			qs.page_token = pageToken;
+		}
+
+		const requestOptions: IHttpRequestOptions = {
+			method: 'GET' as IHttpRequestMethods,
+			url: `/open-apis/wiki/v2/spaces/${spaceId}/nodes`,
+			qs,
+		};
+
+		if (options.timeout) {
+			requestOptions.timeout = options.timeout;
+		}
+
+		const response = await RequestUtils.request.call(this, requestOptions);
 
 			const responseData = response as {
 				items?: IDataObject[];

@@ -3,6 +3,11 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
 import FormData from 'form-data';
+import {
+	fileFieldNameOption,
+	batchingOption,
+	timeoutOption,
+} from '../../../help/utils/sharedOptions';
 
 const MessageImageUploadOperate: ResourceOperations = {
 	name: '上传图片',
@@ -28,17 +33,27 @@ const MessageImageUploadOperate: ResourceOperations = {
 			description: '图片类型。message：用于发送消息；avatar：用于设置头像',
 		},
 		{
-			displayName: 'Input Data Field Name',
-			name: 'fileFieldName',
-			type: 'string',
-			default: 'data',
-			required: true,
+			...fileFieldNameOption,
 			description: 'The name of the incoming field containing the binary file data to be processe',
+		},
+		{
+			displayName: 'Options',
+			name: 'options',
+			type: 'collection',
+			placeholder: 'Add option',
+			default: {},
+			options: [
+				batchingOption,
+				timeoutOption,
+			],
 		},
 	],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 		const image_type = this.getNodeParameter('image_type', index) as string;
 		const fileFieldName = this.getNodeParameter('fileFieldName', index) as string;
+		const options = this.getNodeParameter('options', index, {}) as {
+			timeout?: number;
+		};
 		const file = (await NodeUtils.buildUploadFileData.call(this, fileFieldName, index)) as any;
 
 		if (!file || !file.value) {
@@ -52,11 +67,17 @@ const MessageImageUploadOperate: ResourceOperations = {
 		formData.append('image_type', image_type);
 		formData.append('image', file.value);
 
-		return RequestUtils.request.call(this, {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'POST',
 			url: '/open-apis/im/v1/images',
 			body: formData,
-		} as IHttpRequestOptions);
+		};
+
+		if (options.timeout) {
+			requestOptions.timeout = options.timeout;
+		}
+
+		return RequestUtils.request.call(this, requestOptions);
 	},
 };
 

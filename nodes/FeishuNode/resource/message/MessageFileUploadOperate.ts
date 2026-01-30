@@ -3,6 +3,12 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
 import FormData from 'form-data';
+import {
+	fileFieldNameOption,
+	fileNameOption,
+	batchingOption,
+	timeoutOption,
+} from '../../../help/utils/sharedOptions';
 
 const MessageFileUploadOperate: ResourceOperations = {
 	name: '上传文件',
@@ -48,14 +54,7 @@ const MessageFileUploadOperate: ResourceOperations = {
 			default: 'stream',
 			description: '待上传的文件类型。若上传文件不属于以上枚举类型，可以使用 stream 格式',
 		},
-		{
-			displayName: 'Input Data Field Name',
-			name: 'fileFieldName',
-			type: 'string',
-			default: 'data',
-			required: true,
-			description: 'The name of the incoming field containing the binary file data to be processed',
-		},
+		fileFieldNameOption,
 		{
 			displayName: '选项',
 			name: 'options',
@@ -64,10 +63,7 @@ const MessageFileUploadOperate: ResourceOperations = {
 			default: {},
 			options: [
 				{
-					displayName: '自定义文件名',
-					name: 'file_name',
-					type: 'string',
-					default: '',
+					...fileNameOption,
 					description: '带后缀的文件名，例如：测试视频.mp4。不填则自动使用原始文件名',
 				},
 				{
@@ -77,6 +73,8 @@ const MessageFileUploadOperate: ResourceOperations = {
 					default: 0,
 					description: '文件的时长（视频、音频），单位：毫秒。不传值时无法显示文件的具体时长',
 				},
+				batchingOption,
+				timeoutOption,
 			],
 		},
 	],
@@ -86,6 +84,7 @@ const MessageFileUploadOperate: ResourceOperations = {
 		const options = this.getNodeParameter('options', index, {}) as {
 			file_name?: string;
 			duration?: number;
+			timeout?: number;
 		};
 
 		const file = (await NodeUtils.buildUploadFileData.call(this, fileFieldName, index)) as any;
@@ -114,11 +113,17 @@ const MessageFileUploadOperate: ResourceOperations = {
 			formData.append('duration', options.duration.toString());
 		}
 
-		return RequestUtils.request.call(this, {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'POST',
 			url: '/open-apis/im/v1/files',
 			body: formData,
-		} as IHttpRequestOptions);
+		};
+
+		if (options.timeout) {
+			requestOptions.timeout = options.timeout;
+		}
+
+		return RequestUtils.request.call(this, requestOptions);
 	},
 };
 

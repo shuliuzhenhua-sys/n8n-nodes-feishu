@@ -3,6 +3,12 @@ import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
 import FormData from 'form-data';
+import {
+	fileFieldNameOption,
+	fileNameOption,
+	batchingOption,
+	timeoutOption,
+} from '../../../help/utils/sharedOptions';
 
 /**
  * 计算 Adler-32 校验和
@@ -120,14 +126,7 @@ const SpaceMediaChunkUploadOperate: ResourceOperations = {
 			description:
 				'上传点的 token，即要上传的云文档的 token，用于指定素材将要上传到的云文档或位置。参考<a href="https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/drive-v1/media/introduction">素材概述</a>了解上传点类型与上传点 token 的对应关系',
 		},
-		{
-			displayName: 'Input Data Field Name',
-			name: 'fileFieldName',
-			type: 'string',
-			default: 'data',
-			required: true,
-			description: 'The name of the incoming field containing the binary file data to be processed',
-		},
+		fileFieldNameOption,
 		{
 			displayName: '选项',
 			name: 'options',
@@ -135,14 +134,7 @@ const SpaceMediaChunkUploadOperate: ResourceOperations = {
 			placeholder: '添加选项',
 			default: {},
 			options: [
-				{
-					displayName: '自定义文件名',
-					name: 'file_name',
-					type: 'string',
-					default: '',
-					description:
-						'自定义文件名，例如：demo.pdf。留空则从二进制数据中自动获取。最大长度250字符',
-				},
+				fileNameOption,
 				{
 					displayName: 'Extra',
 					name: 'extra',
@@ -169,14 +161,9 @@ const SpaceMediaChunkUploadOperate: ResourceOperations = {
 					default: 5,
 					description: '分片上传的最大并发数，默认 5（飞书 API 限制 5 QPS）',
 				},
+				batchingOption,
 				{
-					displayName: 'Timeout',
-					name: 'timeout',
-					type: 'number',
-					typeOptions: {
-						minValue: 0,
-					},
-					default: 0,
+					...timeoutOption,
 					description: '每个分片上传的超时时间（毫秒），超过此时间将中止请求。0 表示不限制超时。',
 				},
 			],

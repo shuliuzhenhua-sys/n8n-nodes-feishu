@@ -7,6 +7,7 @@ import {
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
+import { batchingOption, timeoutOption } from '../../../help/utils/sharedOptions';
 
 const WikiSpacesNodeCreateHierarchyOperate: ResourceOperations = {
 	name: '创建动态层级的知识库空间节点 (自定义封装)',
@@ -75,6 +76,14 @@ const WikiSpacesNodeCreateHierarchyOperate: ResourceOperations = {
 			default: true,
 			description: 'Whether to skip creating nodes that already exist (by title match)',
 		},
+		{
+			displayName: 'Options',
+			name: 'options',
+			type: 'collection',
+			placeholder: 'Add option',
+			default: {},
+			options: [batchingOption, timeoutOption],
+		},
 	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 		const spaceId = this.getNodeParameter('space_id', index) as string;
@@ -83,6 +92,9 @@ const WikiSpacesNodeCreateHierarchyOperate: ResourceOperations = {
 		const breadcrumbItemsRaw = this.getNodeParameter('breadcrumbItems', index) as string | string[];
 		const intermediateObjType = this.getNodeParameter('intermediate_obj_type', index) as string;
 		const skipExisting = this.getNodeParameter('skipExisting', index, true) as boolean;
+		const options = this.getNodeParameter('options', index, {}) as {
+			timeout?: number;
+		};
 
 		// 解析 breadcrumbItems
 		let breadcrumbItems: string[];
@@ -125,6 +137,7 @@ const WikiSpacesNodeCreateHierarchyOperate: ResourceOperations = {
 					url: `/open-apis/wiki/v2/spaces/${spaceId}/nodes`,
 					qs,
 				};
+				if (options.timeout) requestOptions.timeout = options.timeout;
 
 				const response = await RequestUtils.request.call(this, requestOptions);
 
@@ -167,6 +180,7 @@ const WikiSpacesNodeCreateHierarchyOperate: ResourceOperations = {
 				url: `/open-apis/wiki/v2/spaces/${spaceId}/nodes`,
 				body,
 			};
+			if (options.timeout) requestOptions.timeout = options.timeout;
 
 			return RequestUtils.request.call(this, requestOptions);
 		};

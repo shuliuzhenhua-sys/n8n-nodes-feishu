@@ -8,6 +8,7 @@ import {
 import { ResourceOperations } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
 import RequestUtils from '../../../help/utils/RequestUtils';
+import { timeoutOption, paginationOptions } from '../../../help/utils/sharedOptions';
 
 export default {
 	name: '搜索日程',
@@ -39,29 +40,8 @@ export default {
 			description:
 				'参考 https://open.feishu.cn/document/server-docs/calendar-v4/calendar-event/search#requestBody',
 		},
-		{
-			displayName: 'Return All',
-			name: 'returnAll',
-			type: 'boolean',
-			default: false,
-			description: 'Whether to return all results or only up to a given limit',
-		},
-		{
-			displayName: 'Limit',
-			name: 'limit',
-			type: 'number',
-			default: 50,
-			typeOptions: {
-				minValue: 10,
-				maxValue: 100,
-			},
-			displayOptions: {
-				show: {
-					returnAll: [false],
-				},
-			},
-			description: 'Max number of results to return',
-		},
+		paginationOptions.returnAll,
+		paginationOptions.limit(100, 10),
 		{
 			displayName: '用户 ID 类型',
 			name: 'user_id_type',
@@ -74,6 +54,14 @@ export default {
 			description: '用户 ID 类型。',
 			default: 'open_id',
 		},
+		{
+			displayName: 'Options',
+			name: 'options',
+			type: 'collection',
+			placeholder: 'Add option',
+			default: {},
+			options: [timeoutOption],
+		},
 	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject[]> {
 		const calendarId = this.getNodeParameter('calendar_id', index) as string;
@@ -82,6 +70,9 @@ export default {
 		const returnAll = this.getNodeParameter('returnAll', index, false) as boolean;
 		const limit = this.getNodeParameter('limit', index, 20) as number;
 		const userIdType = this.getNodeParameter('user_id_type', index, 'open_id') as string;
+		const options = this.getNodeParameter('options', index, {}) as {
+			timeout?: number;
+		};
 
 		// 统一的请求函数
 		const fetchPage = async (pageToken: string | undefined, pageSize: number) => {
@@ -108,6 +99,10 @@ export default {
 				qs,
 				body,
 			};
+
+			if (options.timeout) {
+				requestOptions.timeout = options.timeout;
+			}
 
 			const response = await RequestUtils.request.call(this, requestOptions);
 

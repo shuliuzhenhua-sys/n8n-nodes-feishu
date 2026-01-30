@@ -106,14 +106,17 @@ export const paginationOptions = {
 	/**
 	 * 限制返回数量选项
 	 * @param maxValue 最大值，默认 100
+	 * @param minValue 最小值，默认 1
+	 * @param defaultValue 默认值，默认 50
 	 */
-	limit: (maxValue = 100): INodeProperties => ({
+	limit: (maxValue = 100, minValue = 1, defaultValue = 50): INodeProperties => ({
 		displayName: 'Limit',
 		name: 'limit',
 		type: 'number',
-		default: 50,
+		// eslint-disable-next-line n8n-nodes-base/node-param-default-wrong-for-limit
+		default: defaultValue,
 		typeOptions: {
-			minValue: 1,
+			minValue,
 			maxValue,
 		},
 		displayOptions: {
@@ -122,36 +125,6 @@ export const paginationOptions = {
 			},
 		},
 		description: 'Max number of results to return',
-	}),
-
-	/**
-	 * 分页标记选项
-	 */
-	pageToken: {
-		displayName: '分页标记',
-		name: 'page_token',
-		// eslint-disable-next-line n8n-nodes-base/node-param-type-options-password-missing
-		type: 'string',
-		default: '',
-		description:
-			'分页标记，第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会返回新的 page_token。',
-	} as INodeProperties,
-
-	/**
-	 * 每页数量选项
-	 * @param defaultValue 默认值
-	 * @param maxValue 最大值
-	 */
-	pageSize: (defaultValue = 20, maxValue = 100): INodeProperties => ({
-		displayName: '每页数量',
-		name: 'page_size',
-		type: 'number',
-		default: defaultValue,
-		typeOptions: {
-			minValue: 1,
-			maxValue,
-		},
-		description: `一次请求返回的最大数量。最小值为 1，最大值为 ${maxValue}。`,
 	}),
 };
 
@@ -168,6 +141,44 @@ export const userIdTypeOption: INodeProperties = {
 		{ name: 'User ID', value: 'user_id' },
 	],
 	default: 'open_id',
+};
+
+/**
+ * 群成员 ID 类型选项
+ */
+export const memberIdTypeOptions = {
+	/**
+	 * 基础版本（不含 app_id）
+	 */
+	basic: {
+		displayName: '成员 ID 类型',
+		name: 'member_id_type',
+		type: 'options',
+		options: [
+			{ name: 'Open ID', value: 'open_id' },
+			{ name: 'Union ID', value: 'union_id' },
+			{ name: 'User ID', value: 'user_id' },
+		],
+		description: '用户 ID 类型',
+		default: 'open_id',
+	} as INodeProperties,
+
+	/**
+	 * 带 app_id 版本（支持机器人）
+	 */
+	withAppId: {
+		displayName: '成员 ID 类型',
+		name: 'member_id_type',
+		type: 'options',
+		options: [
+			{ name: 'Open ID', value: 'open_id' },
+			{ name: 'Union ID', value: 'union_id' },
+			{ name: 'User ID', value: 'user_id' },
+			{ name: 'App ID', value: 'app_id' },
+		],
+		description: '用户 ID 类型。邀请用户时推荐使用 open_id；邀请机器人时需填写 app_id。',
+		default: 'open_id',
+	} as INodeProperties,
 };
 
 /**
@@ -209,4 +220,64 @@ export const receiveIdTypeOption: INodeProperties = {
 	],
 	required: true,
 	default: 'open_id',
+};
+
+/**
+ * 自定义文件名选项
+ */
+export const fileNameOption: INodeProperties = {
+	displayName: '自定义文件名',
+	name: 'file_name',
+	type: 'string',
+	default: '',
+	description:
+		'自定义文件名，例如：demo.pdf。留空则从二进制数据中自动获取。最大长度250字符',
+};
+
+/**
+ * MIME Type 选项
+ */
+export const mimeTypeOption: INodeProperties = {
+	displayName: 'MIME Type',
+	name: 'mimeType',
+	type: 'string',
+	default: '',
+	description:
+		'自定义文件的 MIME 类型。如不填写，将自动识别。常见类型：application/pdf、video/mp4、audio/opus',
+};
+
+/**
+ * 输出二进制字段选项（下载用）
+ */
+export const binaryPropertyNameOption: INodeProperties = {
+	displayName: 'Put Output File in Field',
+	name: 'binaryPropertyName',
+	type: 'string',
+	default: 'data',
+	required: true,
+	description: 'The name of the output binary field to put the file in',
+};
+
+/**
+ * 输入二进制字段选项（上传用）
+ */
+export const fileFieldNameOption: INodeProperties = {
+	displayName: 'Input Data Field Name',
+	name: 'fileFieldName',
+	type: 'string',
+	default: 'data',
+	required: true,
+	description: 'The name of the incoming field containing the binary file data to be processed',
+};
+
+/**
+ * 仅超时的选项集合（用于 Return All 节点）
+ */
+export const timeoutOnlyOptions: INodeProperties = {
+	displayName: 'Options',
+	name: 'options',
+	type: 'collection',
+	placeholder: 'Add option',
+	default: {},
+	options: [timeoutOption],
 };
