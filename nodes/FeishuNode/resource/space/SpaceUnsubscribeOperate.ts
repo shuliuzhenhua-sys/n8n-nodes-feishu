@@ -6,6 +6,7 @@ const SpaceUnsubscribeOperate: ResourceOperations = {
 	name: '取消云文档事件订阅',
 	value: 'space:unsubscribe',
 	order: 40,
+	description: '该接口用于取消订阅云文档的通知事件。',
 	options: [
 		{
 			displayName: '文档Token',

@@ -10,20 +10,20 @@ export default {
 	order: 280,
 	options: [
 		{
-			displayName: '多维表格 Token',
+			displayName: '多维表格 App 的唯一标识',
 			name: 'app_toke',
 			type: 'string',
 			required: true,
 			default: '',
-			description: '多维表格 App 的唯一标识。',
+			description: '多维表格 App 的唯一标识。不同形态的多维表格，其 app_token 的获取方式不同，参考<a href="https://open.feishu.cn/document/ukTMukTMukTM/uUDN04SN0QjL1QDN/bitable-overview">多维表格 app_token 获取方式</a>获取。',
 		},
 		{
-			displayName: '多维表格 ID',
+			displayName: '多维表格数据表的唯一标识',
 			name: 'table_id',
 			type: 'string',
 			required: true,
 			default: '',
-			description: '多维表格数据表的唯一标识。',
+			description: '你可通过多维表格 URL 获取 table_id',
 		},
 		{
 			displayName: '字段定义方式',
@@ -172,7 +172,7 @@ export default {
 			name: 'body',
 			type: 'json',
 			required: true,
-			default: '[{"field_name":"test", "type": 1}]',
+			default: JSON.stringify([{ field_name: 'test', type: 1 }], null, 2),
 			description:
 				'参考：https://open.feishu.cn/document/server-docs/docs/bitable-v1/app-table-field/create#requestBody',
 			displayOptions: {

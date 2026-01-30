@@ -50,19 +50,75 @@ async function runWithConcurrency<T>(
 	return results;
 }
 
-const SpaceChunkUploadOperate: ResourceOperations = {
-	name: '分片上传文件',
-	value: 'space:chunkUpload',
-	order: 70,
-	description: '将指定文件上传至云空间指定目录中，支持上传大于20MB的文件',
+const SpaceMediaChunkUploadOperate: ResourceOperations = {
+	name: '分片上传素材',
+	value: 'space:mediaChunkUpload',
+	order: 15,
+	description: '当上传的文件大于 20MB 时使用。将文件、图片、视频等素材分片上传到指定云文档中。平台固定以 4MB 的大小对素材进行分片。',
 	options: [
 		{
-			displayName: '文件夹 Token',
+			displayName: '上传点的类型',
+			name: 'parent_type',
+			type: 'options',
+			// eslint-disable-next-line n8n-nodes-base/node-param-options-type-unsorted-items
+			options: [
+				{
+					name: '旧版文档图片',
+					value: 'doc_image',
+				},
+				{
+					name: '新版文档图片',
+					value: 'docx_image',
+				},
+				{
+					name: '电子表格图片',
+					value: 'sheet_image',
+				},
+				{
+					name: '旧版文档文件',
+					value: 'doc_file',
+				},
+				{
+					name: '新版文档文件',
+					value: 'docx_file',
+				},
+				{
+					name: '电子表格文件',
+					value: 'sheet_file',
+				},
+				{
+					name: 'Vc 虚拟背景（灰度中，暂未开放）',
+					value: 'vc_virtual_background',
+				},
+				{
+					name: '多维表格图片',
+					value: 'bitable_image',
+				},
+				{
+					name: '多维表格文件',
+					value: 'bitable_file',
+				},
+				{
+					name: '同事圈（灰度中，暂未开放）',
+					value: 'moments',
+				},
+				{
+					name: '云文档导入文件',
+					value: 'ccm_import_open',
+				},
+			],
+			required: true,
+			default: 'docx_file',
+			description: '上传点的类型，你可根据上传的文件类型与云文档类型确定上传点类型',
+		},
+		{
+			displayName: '上传点的 Token',
 			name: 'parent_node',
 			type: 'string',
-			required: true,
 			default: '',
-			description: '云空间中文件夹的 token，获取方式见飞书文档',
+			required: true,
+			description:
+				'上传点的 token，即要上传的云文档的 token，用于指定素材将要上传到的云文档或位置。参考<a href="https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/drive-v1/media/introduction">素材概述</a>了解上传点类型与上传点 token 的对应关系',
 		},
 		{
 			displayName: 'Input Data Field Name',
@@ -86,6 +142,14 @@ const SpaceChunkUploadOperate: ResourceOperations = {
 					default: '',
 					description:
 						'自定义文件名，例如：demo.pdf。留空则从二进制数据中自动获取。最大长度250字符',
+				},
+				{
+					displayName: 'Extra',
+					name: 'extra',
+					type: 'string',
+					default: '',
+					description:
+						'以下场景的上传点需通过该参数传入素材所在云文档的 token。extra 参数的格式为 {"drive_route_token":"素材所在云文档的 token"}。详情参考<a href="https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/drive-v1/media/introduction#3b8635d3">素材概述-extra 参数说明</a>',
 				},
 				{
 					displayName: '计算校验和',
@@ -119,10 +183,12 @@ const SpaceChunkUploadOperate: ResourceOperations = {
 		},
 	],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
+		const parent_type = this.getNodeParameter('parent_type', index) as string;
 		const parent_node = this.getNodeParameter('parent_node', index) as string;
 		const fileFieldName = this.getNodeParameter('fileFieldName', index) as string;
 		const options = this.getNodeParameter('options', index, {}) as {
 			file_name?: string;
+			extra?: string;
 			enableChecksum?: boolean;
 			concurrency?: number;
 			timeout?: number;
@@ -165,15 +231,22 @@ const SpaceChunkUploadOperate: ResourceOperations = {
 		}
 
 		// 第一步：预上传，获取上传事务 ID 和分片策略
+		const prepareBody: IDataObject = {
+			file_name,
+			parent_type,
+			parent_node,
+			size: fileSize,
+		};
+
+		// 添加可选的 extra 参数
+		if (options.extra) {
+			prepareBody.extra = options.extra;
+		}
+
 		const prepareResponse = await RequestUtils.request.call(this, {
 			method: 'POST',
-			url: '/open-apis/drive/v1/files/upload_prepare',
-			body: {
-				file_name,
-				parent_type: 'explorer',
-				parent_node,
-				size: fileSize,
-			},
+			url: '/open-apis/drive/v1/medias/upload_prepare',
+			body: prepareBody,
 		});
 
 		const upload_id = prepareResponse.upload_id as string;
@@ -212,7 +285,7 @@ const SpaceChunkUploadOperate: ResourceOperations = {
 				// 上传分片
 				const partResponse = await boundRequest({
 					method: 'POST',
-					url: '/open-apis/drive/v1/files/upload_part',
+					url: '/open-apis/drive/v1/medias/upload_part',
 					body: formData,
 					timeout: requestOptions.timeout,
 				} as IHttpRequestOptions);
@@ -231,7 +304,7 @@ const SpaceChunkUploadOperate: ResourceOperations = {
 		// 第三步：完成上传
 		const finishResponse = await RequestUtils.request.call(this, {
 			method: 'POST',
-			url: '/open-apis/drive/v1/files/upload_finish',
+			url: '/open-apis/drive/v1/medias/upload_finish',
 			body: {
 				upload_id,
 				block_num,
@@ -245,9 +318,10 @@ const SpaceChunkUploadOperate: ResourceOperations = {
 			file_name,
 			file_size: fileSize,
 			uploaded_parts: uploadedParts.length,
+			file_token: finishResponse.file_token,
 			finish_response: finishResponse,
 		};
 	},
 };
 
-export default SpaceChunkUploadOperate;
+export default SpaceMediaChunkUploadOperate;

@@ -1,4 +1,10 @@
-import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestOptions } from 'n8n-workflow';
+import {
+	IDataObject,
+	IExecuteFunctions,
+	INodeProperties,
+	IHttpRequestOptions,
+	IHttpRequestMethods,
+} from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 
@@ -16,19 +22,27 @@ const DocGetAllBlocksOperate: ResourceOperations = {
 			description: '文档的唯一标识。',
 		},
 		{
-			displayName: '分页大小',
-			name: 'page_size',
-			type: 'number',
-			default: 500,
-			description: '分页大小，最大值为500。',
+			displayName: 'Return All',
+			name: 'returnAll',
+			type: 'boolean',
+			default: false,
+			description: 'Whether to return all results or only up to a given limit',
 		},
 		{
-			displayName: '分页标记',
-			name: 'page_toke',
-			type: 'string',
-			default: '',
-			description:
-				'第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会同时返回新的 page_token，下次遍历可采用该 page_token 获取查询结果',
+			displayName: 'Limit',
+			name: 'limit',
+			type: 'number',
+			default: 50,
+			typeOptions: {
+				minValue: 1,
+				maxValue: 500,
+			},
+			displayOptions: {
+				show: {
+					returnAll: [false],
+				},
+			},
+			description: 'Max number of results to return',
 		},
 		{
 			displayName: '文档版本',
@@ -57,75 +71,71 @@ const DocGetAllBlocksOperate: ResourceOperations = {
 				},
 			],
 		},
-		{
-			displayName: 'Options',
-			name: 'options',
-			type: 'collection',
-			placeholder: 'Add option',
-			default: {},
-			options: [
-				{
-					displayName: 'Batching',
-					name: 'batching',
-					placeholder: 'Add Batching',
-					type: 'fixedCollection',
-					typeOptions: { multipleValues: false },
-					default: { batch: {} },
-					options: [
-						{
-							displayName: 'Batching',
-							name: 'batch',
-							values: [
-								{
-									displayName: 'Items per Batch',
-									name: 'batchSize',
-									type: 'number',
-									typeOptions: { minValue: 1 },
-									default: 50,
-									description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
-								},
-								{
-									displayName: 'Batch Interval (Ms)',
-									name: 'batchInterval',
-									type: 'number',
-									typeOptions: { minValue: 0 },
-									default: 1000,
-									description: '每批请求之间的时间（毫秒）。0 表示禁用。',
-								},
-							],
-						},
-					],
-				},
-				{
-					displayName: 'Timeout',
-					name: 'timeout',
-					type: 'number',
-					typeOptions: { minValue: 0 },
-					default: 0,
-					description:
-						'等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。',
-				},
-			],
-		},
 	] as INodeProperties[],
-	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
+	async call(this: IExecuteFunctions, index: number): Promise<IDataObject[]> {
 		const document_id = this.getNodeParameter('document_id', index) as string;
-		const page_size = this.getNodeParameter('page_size', index, 500) as number;
-		const page_token = this.getNodeParameter('page_toke', index, '') as string;
+		const returnAll = this.getNodeParameter('returnAll', index, false) as boolean;
+		const limit = this.getNodeParameter('limit', index, 500) as number;
 		const document_revision_id = this.getNodeParameter('document_revision_id', index, -1) as number;
 		const user_id_type = this.getNodeParameter('user_id_type', index, 'open_id') as string;
-		const options = this.getNodeParameter('options', index, {}) as {
-			timeout?: number;
-		};
-		const qs = { page_size, page_token, document_revision_id, user_id_type };
-		const requestOptions: IHttpRequestOptions = {
-			method: 'GET',
-			url: `/open-apis/docx/v1/documents/${document_id}/blocks`,
-			qs,
-		};
-		if (options.timeout) requestOptions.timeout = options.timeout;
 
-		return RequestUtils.request.call(this, requestOptions);
+		// 统一的请求函数
+		const fetchPage = async (pageToken: string | undefined, pageSize: number) => {
+			const qs: IDataObject = {
+				page_size: pageSize,
+				document_revision_id,
+				user_id_type,
+			};
+
+			if (pageToken) {
+				qs.page_token = pageToken;
+			}
+
+			const requestOptions: IHttpRequestOptions = {
+				method: 'GET' as IHttpRequestMethods,
+				url: `/open-apis/docx/v1/documents/${document_id}/blocks`,
+				qs,
+			};
+
+			const response = await RequestUtils.request.call(this, requestOptions);
+
+			const responseData = response as {
+				items?: IDataObject[];
+				page_token?: string;
+				has_more?: boolean;
+			};
+
+			return {
+				items: responseData.items || [],
+				pageToken: responseData.page_token,
+				hasMore: responseData.has_more || false,
+			};
+		};
+
+		// 处理分页逻辑
+		if (returnAll) {
+			let allResults: IDataObject[] = [];
+			let pageToken: string | undefined = undefined;
+			const pageSize = 500; // 使用最大分页大小以减少请求次数
+
+			while (true) {
+				const { items, pageToken: nextPageToken, hasMore } = await fetchPage(pageToken, pageSize);
+				allResults = allResults.concat(items);
+
+				// 检查是否还有更多数据
+				if (!hasMore || !nextPageToken) {
+					break;
+				}
+
+				pageToken = nextPageToken;
+			}
+
+			return allResults;
+		} else {
+			// 单次请求，返回限制数量的数据
+			const { items } = await fetchPage(undefined, limit);
+			return items;
+		}
 	},
 };
 
