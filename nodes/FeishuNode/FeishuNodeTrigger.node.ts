@@ -13,23 +13,41 @@ import { Credentials } from '../help/type/enums';
 import { WSClient } from '../help/utils/feishu-sdk/ws-client';
 import { EventDispatcher } from '../help/utils/feishu-sdk/handler/event-handler';
 import { triggerEventProperty } from '../help/utils/properties';
-import { FEISHU_RESPONSE_MARKER } from './RespondToFeishu.node';
+import { FEISHU_RESPONSE_KEY } from './RespondToFeishu.node';
+
+/**
+ * 飞书响应提取结果
+ */
+interface FeishuResponseResult {
+	/** 响应数据 */
+	response: IDataObject | null;
+	/** 找到的响应节点数量 */
+	count: number;
+	/** 第一个响应所在的节点名称 */
+	nodeName?: string;
+}
 
 /**
  * 从 IRun 执行结果中提取飞书响应数据
- * 遍历所有节点的输出，查找带有 FEISHU_RESPONSE_MARKER 标记且 eventId 匹配的响应
+ * 遍历所有节点的输出，查找带有 customFeishuResponse 字段的响应
+ *
+ * 注意：
+ * - 由于每次 emit() 触发独立的工作流执行，IRun 中只包含这次执行的结果
+ * - 如果存在多个 RespondToFeishu 节点，只有第一个找到的响应会被使用（与 n8n Respond to Webhook 行为一致）
  *
  * @param run - 工作流执行结果
- * @param eventId - 要匹配的事件 ID
- * @returns 响应数据，如果未找到则返回 null
+ * @returns 响应结果，包含响应数据、响应数量和节点名称
  */
-function extractFeishuResponse(run: IRun, eventId: string): IDataObject | null {
+function extractFeishuResponse(run: IRun): FeishuResponseResult {
 	const resultData: IRunExecutionData | undefined = run.data;
 	if (!resultData?.resultData?.runData) {
-		return null;
+		return { response: null, count: 0 };
 	}
 
 	const runData = resultData.resultData.runData;
+	let firstResponse: IDataObject | null = null;
+	let firstNodeName: string | undefined;
+	let responseCount = 0;
 
 	// 遍历所有节点的执行结果
 	for (const nodeName of Object.keys(runData)) {
@@ -49,16 +67,24 @@ function extractFeishuResponse(run: IRun, eventId: string): IDataObject | null {
 				for (const item of outputItems) {
 					const json = item.json as IDataObject;
 
-					// 查找带有飞书响应标记且 eventId 匹配的数据
-					if (json?.[FEISHU_RESPONSE_MARKER] === true && json?.eventId === eventId) {
-						return (json.responseData as IDataObject) || {};
+					// 查找带有飞书自定义响应的数据
+					if (json?.[FEISHU_RESPONSE_KEY] !== undefined) {
+						responseCount++;
+						if (firstResponse === null) {
+							firstResponse = (json[FEISHU_RESPONSE_KEY] as IDataObject) || {};
+							firstNodeName = nodeName;
+						}
 					}
 				}
 			}
 		}
 	}
 
-	return null;
+	return {
+		response: firstResponse,
+		count: responseCount,
+		nodeName: firstNodeName,
+	};
 }
 
 export class FeishuNodeTrigger implements INodeType {
@@ -218,8 +244,6 @@ export class FeishuNodeTrigger implements INodeType {
 				if (responseMode === 'immediately') {
 					// 立即响应模式：先 emit，然后立即返回
 					this.emit([this.helpers.returnJsonArray(enrichedData)], undefined, donePromise);
-					this.logger.info(`已处理事件: ${event}, event_id: ${eventId}`);
-
 					if (callbackToast) {
 						return {
 							toast: {
@@ -235,19 +259,13 @@ export class FeishuNodeTrigger implements INodeType {
 					// 这种方式支持多 Worker 模式，因为响应数据通过 n8n 的执行结果机制传递
 					if (!eventId) {
 						this.emit([this.helpers.returnJsonArray(enrichedData)], undefined, donePromise);
-						this.logger.error('event_id 为空，无法关联响应，直接返回空响应');
 						return {};
 					}
 
 					// 触发工作流执行，并等待 donePromise 完成
 					this.emit([this.helpers.returnJsonArray(enrichedData)], undefined, donePromise);
-					this.logger.info(
-						`[飞书响应模式] 已触发工作流执行，等待 donePromise 完成，event_id: ${eventId}, timeout: ${responseTimeout}ms`,
-					);
 
 					try {
-						const startTime = Date.now();
-
 						// 使用 Promise.race 实现超时控制
 						const executionResult = await Promise.race([
 							donePromise.promise,
@@ -259,29 +277,29 @@ export class FeishuNodeTrigger implements INodeType {
 							),
 						]);
 
-						const elapsed = Date.now() - startTime;
-						this.logger.info(
-							`[飞书响应模式] donePromise 已完成，耗时: ${elapsed}ms，event_id: ${eventId}`,
-						);
-
 						// 验证 IRun 结果结构
 						if (!executionResult?.data?.resultData?.runData) {
 							this.logger.warn(
-								`[飞书响应模式] IRun 结果结构不完整，可能在多 Worker 模式下存在问题。event_id: ${eventId}`,
+								`[飞书响应模式] IRun 结果结构不完整，可能在多 Worker 模式下存在问题`,
 							);
 						}
 
 						// 从执行结果中提取飞书响应数据
-						const response = extractFeishuResponse(executionResult, eventId);
+						const { response, count, nodeName } = extractFeishuResponse(executionResult);
+
+						// 如果存在多个响应节点，发出警告
+						if (count > 1) {
+							this.logger.warn(
+								`[飞书响应模式] 检测到 ${count} 个飞书响应节点，只有第一个节点 "${nodeName}" 的响应会被使用。` +
+									`建议：工作流中只保留一个"飞书响应"节点，或确保只有一个分支会执行。`,
+							);
+						}
 
 						if (response) {
-							this.logger.info(
-								`[飞书响应模式] 成功从执行结果中提取飞书响应: ${JSON.stringify(response)}`,
-							);
 							return response;
 						} else {
 							this.logger.warn(
-								`[飞书响应模式] 未在执行结果中找到飞书响应节点的输出，eventId: ${eventId}。请确保工作流中包含"飞书响应"节点。`,
+								`[飞书响应模式] 未在执行结果中找到飞书响应节点的输出。请确保工作流中包含"飞书响应"节点。`,
 							);
 							return {};
 						}

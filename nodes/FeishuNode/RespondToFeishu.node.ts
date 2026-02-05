@@ -11,10 +11,10 @@ import {
 import { configuredOutputs } from '../help/utils/outputs';
 
 /**
- * 飞书响应数据的特殊标记
+ * 飞书自定义响应数据的标记键名
  * 用于在 IRun 执行结果中识别飞书响应节点的输出
  */
-export const FEISHU_RESPONSE_MARKER = '__feishuResponse__';
+export const FEISHU_RESPONSE_KEY = 'customFeishuResponse';
 
 export class RespondToFeishu implements INodeType {
 	description: INodeTypeDescription = {
@@ -33,15 +33,6 @@ export class RespondToFeishu implements INodeType {
 		inputs: [NodeConnectionTypes.Main],
 		outputs: `={{(${configuredOutputs})($nodeVersion, $parameter)}}`,
 		properties: [
-			{
-				displayName: '事件 ID',
-				name: 'eventId',
-				type: 'string',
-				required: true,
-				default: '={{ $json.event_id }}',
-				description: '飞书触发器的事件 ID，必须与触发器的 event_id 保持一致。默认使用表达式自动获取。',
-				placeholder: '{{ $json.event_id }}',
-			},
 			{
 				displayName: '响应内容',
 				name: 'respondWith',
@@ -109,16 +100,6 @@ export class RespondToFeishu implements INodeType {
 			const item = items[itemIndex];
 			const json = item.json as IDataObject;
 
-			// 获取 event_id（必填参数，用于关联 Trigger 和 Response）
-			const eventId = this.getNodeParameter('eventId', itemIndex) as string;
-			if (!eventId) {
-				throw new NodeOperationError(
-					this.getNode(),
-					'事件 ID 不能为空，请确保填写了正确的 event_id（必须与飞书 Trigger 的 event_id 一致）',
-					{ itemIndex },
-				);
-			}
-
 			// 检查 responseMode（可选，不报错）
 			const responseMode = json.responseMode as string;
 			if (responseMode && responseMode !== 'responseNode') {
@@ -144,13 +125,11 @@ export class RespondToFeishu implements INodeType {
 			// 支持多 Worker 模式：响应数据通过 n8n 的执行结果机制传递，而非进程内内存
 			responseItems.push({
 				json: {
-					[FEISHU_RESPONSE_MARKER]: true,
-					eventId,
-					responseData,
+					[FEISHU_RESPONSE_KEY]: responseData,
 				},
 			});
 
-			this.logger.info(`飞书响应节点已准备响应数据，eventId: ${eventId}`);
+			this.logger.info('飞书响应节点已准备响应数据');
 		}
 
 		// 清理输入数据（移除内部字段）
