@@ -7,12 +7,59 @@ import {
 	NodeOperationError,
 	IRun,
 	IDataObject,
+	IRunExecutionData,
 } from 'n8n-workflow';
 import { Credentials } from '../help/type/enums';
 import { WSClient } from '../help/utils/feishu-sdk/ws-client';
 import { EventDispatcher } from '../help/utils/feishu-sdk/handler/event-handler';
 import { triggerEventProperty } from '../help/utils/properties';
-import { feishuResponseManager } from '../help/utils/FeishuResponseManager';
+import { FEISHU_RESPONSE_MARKER } from './RespondToFeishu.node';
+
+/**
+ * 从 IRun 执行结果中提取飞书响应数据
+ * 遍历所有节点的输出，查找带有 FEISHU_RESPONSE_MARKER 标记且 eventId 匹配的响应
+ *
+ * @param run - 工作流执行结果
+ * @param eventId - 要匹配的事件 ID
+ * @returns 响应数据，如果未找到则返回 null
+ */
+function extractFeishuResponse(run: IRun, eventId: string): IDataObject | null {
+	const resultData: IRunExecutionData | undefined = run.data;
+	if (!resultData?.resultData?.runData) {
+		return null;
+	}
+
+	const runData = resultData.resultData.runData;
+
+	// 遍历所有节点的执行结果
+	for (const nodeName of Object.keys(runData)) {
+		const nodeRunData = runData[nodeName];
+		if (!nodeRunData) continue;
+
+		// 每个节点可能有多次执行（例如循环中）
+		for (const taskData of nodeRunData) {
+			const outputs = taskData.data?.main;
+			if (!outputs) continue;
+
+			// 遍历所有输出分支
+			for (const outputItems of outputs) {
+				if (!outputItems) continue;
+
+				// 遍历输出中的每个 item
+				for (const item of outputItems) {
+					const json = item.json as IDataObject;
+
+					// 查找带有飞书响应标记且 eventId 匹配的数据
+					if (json?.[FEISHU_RESPONSE_MARKER] === true && json?.eventId === eventId) {
+						return (json.responseData as IDataObject) || {};
+					}
+				}
+			}
+		}
+	}
+
+	return null;
+}
 
 export class FeishuNodeTrigger implements INodeType {
 	description: INodeTypeDescription = {
@@ -184,30 +231,65 @@ export class FeishuNodeTrigger implements INodeType {
 					return {};
 				} else {
 					// 使用 Respond to Feishu 节点响应模式
-					// ⚠️ 关键：必须先注册等待响应，再 emit 触发工作流
-					// 否则工作流可能在注册之前就执行完毕，导致 sendResponse 找不到等待者
+					// 新机制：通过 donePromise 等待工作流执行完成，然后从 IRun 结果中提取响应
+					// 这种方式支持多 Worker 模式，因为响应数据通过 n8n 的执行结果机制传递
 					if (!eventId) {
 						this.emit([this.helpers.returnJsonArray(enrichedData)], undefined, donePromise);
-						this.logger.error('event_id 为空，无法等待响应，直接返回空响应');
+						this.logger.error('event_id 为空，无法关联响应，直接返回空响应');
 						return {};
 					}
 
-					const responsePromise = feishuResponseManager.waitForResponse(
-						eventId,
-						responseTimeout,
+					// 触发工作流执行，并等待 donePromise 完成
+					this.emit([this.helpers.returnJsonArray(enrichedData)], undefined, donePromise);
+					this.logger.info(
+						`[飞书响应模式] 已触发工作流执行，等待 donePromise 完成，event_id: ${eventId}, timeout: ${responseTimeout}ms`,
 					);
 
-					// 注册完成后再触发工作流执行
-					this.emit([this.helpers.returnJsonArray(enrichedData)], undefined, donePromise);
-					this.logger.info(`已处理事件: ${event}, event_id: ${eventId}`);
-
 					try {
-						const response = await responsePromise;
-						this.logger.info(`收到飞书响应节点响应: ${JSON.stringify(response)}`);
-						return response;
+						const startTime = Date.now();
+
+						// 使用 Promise.race 实现超时控制
+						const executionResult = await Promise.race([
+							donePromise.promise,
+							new Promise<never>((_, reject) =>
+								setTimeout(
+									() => reject(new Error(`等待工作流执行超时 (${responseTimeout}ms)`)),
+									responseTimeout,
+								),
+							),
+						]);
+
+						const elapsed = Date.now() - startTime;
+						this.logger.info(
+							`[飞书响应模式] donePromise 已完成，耗时: ${elapsed}ms，event_id: ${eventId}`,
+						);
+
+						// 验证 IRun 结果结构
+						if (!executionResult?.data?.resultData?.runData) {
+							this.logger.warn(
+								`[飞书响应模式] IRun 结果结构不完整，可能在多 Worker 模式下存在问题。event_id: ${eventId}`,
+							);
+						}
+
+						// 从执行结果中提取飞书响应数据
+						const response = extractFeishuResponse(executionResult, eventId);
+
+						if (response) {
+							this.logger.info(
+								`[飞书响应模式] 成功从执行结果中提取飞书响应: ${JSON.stringify(response)}`,
+							);
+							return response;
+						} else {
+							this.logger.warn(
+								`[飞书响应模式] 未在执行结果中找到飞书响应节点的输出，eventId: ${eventId}。请确保工作流中包含"飞书响应"节点。`,
+							);
+							return {};
+						}
 					} catch (error) {
 						const errorMessage = error instanceof Error ? error.message : String(error);
-						this.logger.warn(`等待响应超时或出错: ${errorMessage}`);
+						this.logger.warn(
+							`[飞书响应模式] 等待工作流执行超时或出错: ${errorMessage}，event_id: ${eventId}`,
+						);
 						return {};
 					}
 				}

@@ -8,8 +8,13 @@ import {
 	IDataObject,
 	NodeOperationError,
 } from 'n8n-workflow';
-import { feishuResponseManager } from '../help/utils/FeishuResponseManager';
 import { configuredOutputs } from '../help/utils/outputs';
+
+/**
+ * 飞书响应数据的特殊标记
+ * 用于在 IRun 执行结果中识别飞书响应节点的输出
+ */
+export const FEISHU_RESPONSE_MARKER = '__feishuResponse__';
 
 export class RespondToFeishu implements INodeType {
 	description: INodeTypeDescription = {
@@ -134,21 +139,18 @@ export class RespondToFeishu implements INodeType {
 				}
 			}
 
-			// 发送响应（使用 event_id 关联）
-			const sent = feishuResponseManager.sendResponse(eventId, responseData);
-
-			if (!sent) {
-				this.logger.warn(`未找到等待响应的事件 ID: ${eventId}，可能已超时或已响应`);
-			}
-
-			// 构建响应输出项
+			// 构建带有特殊标记的响应输出项
+			// 这个标记用于让 FeishuNodeTrigger 从 IRun 执行结果中识别响应数据
+			// 支持多 Worker 模式：响应数据通过 n8n 的执行结果机制传递，而非进程内内存
 			responseItems.push({
 				json: {
+					[FEISHU_RESPONSE_MARKER]: true,
 					eventId,
 					responseData,
-					sent,
 				},
 			});
+
+			this.logger.info(`飞书响应节点已准备响应数据，eventId: ${eventId}`);
 		}
 
 		// 清理输入数据（移除内部字段）
@@ -164,11 +166,12 @@ export class RespondToFeishu implements INodeType {
 		// 根据是否启用响应输出分支返回不同的输出
 		if (enableResponseOutput) {
 			// 输出分支 1: Input Data（原始输入）
-			// 输出分支 2: Response（响应数据）
+			// 输出分支 2: Response（响应数据，包含特殊标记）
 			return [cleanedItems, responseItems];
 		}
 
-		// 单输出：返回清理后的输入数据
-		return [cleanedItems];
+		// 单输出：返回包含特殊标记的响应数据
+		// 注意：这里改为返回 responseItems，确保 Trigger 能从执行结果中提取响应
+		return [responseItems];
 	}
 }
