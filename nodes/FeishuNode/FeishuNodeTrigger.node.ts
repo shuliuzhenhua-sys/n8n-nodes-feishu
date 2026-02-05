@@ -8,7 +8,6 @@ import {
 	IRun,
 	IDataObject,
 } from 'n8n-workflow';
-import crypto from 'crypto';
 import { Credentials } from '../help/type/enums';
 import { WSClient } from '../help/utils/feishu-sdk/ws-client';
 import { EventDispatcher } from '../help/utils/feishu-sdk/handler/event-handler';
@@ -153,55 +152,67 @@ export class FeishuNodeTrigger implements INodeType {
 			const isAnyEvent = events.includes('any_event');
 			const handlers: Record<string, (data: IDataObject) => Promise<IDataObject>> = {};
 
-			for (const event of events) {
-				handlers[event] = async (data) => {
-					const donePromise = this.helpers.createDeferredPromise<IRun>();
+		for (const event of events) {
+			handlers[event] = async (data) => {
+				const donePromise = this.helpers.createDeferredPromise<IRun>();
 
-					// 生成唯一标识符用于关联 Trigger 和 Response 节点
-					const correlationId = crypto.randomUUID();
+				// 使用飞书原生的 event_id 作为关联标识符（绝对唯一）
+				const eventId = data.event_id as string;
+				if (!eventId) {
+					this.logger.warn('飞书事件数据中未找到 event_id，响应模式可能无法正常工作');
+				}
 
-					// 将 responseMode 和 correlationId 注入到数据中（用于后续节点判断和关联）
-					const enrichedData = {
-						...data,
-						responseMode,
-						correlationId,
-					};
-
-					this.emit([this.helpers.returnJsonArray(enrichedData)], undefined, donePromise);
-
-					this.logger.info(`已处理事件: ${event}, correlationId: ${correlationId}`);
-
-					if (responseMode === 'immediately') {
-						// 立即响应模式
-						if (callbackToast) {
-							return {
-								toast: {
-									type: 'info',
-									content: callbackToast,
-								},
-							};
-						}
-						return {};
-					} else {
-						// 使用 Respond to Feishu 节点响应模式
-						// 注册等待响应（使用 correlationId 关联）
-						const responsePromise = feishuResponseManager.waitForResponse(
-							correlationId,
-							responseTimeout,
-						);
-
-						try {
-							const response = await responsePromise;
-							this.logger.info(`收到飞书响应节点响应: ${JSON.stringify(response)}`);
-							return response;
-						} catch (error) {
-							const errorMessage = error instanceof Error ? error.message : String(error);
-							this.logger.warn(`等待响应超时或出错: ${errorMessage}`);
-							return {};
-						}
-					}
+				// 将 responseMode 注入到数据中（用于后续节点判断）
+				const enrichedData = {
+					...data,
+					responseMode,
 				};
-			}
+
+				if (responseMode === 'immediately') {
+					// 立即响应模式：先 emit，然后立即返回
+					this.emit([this.helpers.returnJsonArray(enrichedData)], undefined, donePromise);
+					this.logger.info(`已处理事件: ${event}, event_id: ${eventId}`);
+
+					if (callbackToast) {
+						return {
+							toast: {
+								type: 'info',
+								content: callbackToast,
+							},
+						};
+					}
+					return {};
+				} else {
+					// 使用 Respond to Feishu 节点响应模式
+					// ⚠️ 关键：必须先注册等待响应，再 emit 触发工作流
+					// 否则工作流可能在注册之前就执行完毕，导致 sendResponse 找不到等待者
+					if (!eventId) {
+						this.emit([this.helpers.returnJsonArray(enrichedData)], undefined, donePromise);
+						this.logger.error('event_id 为空，无法等待响应，直接返回空响应');
+						return {};
+					}
+
+					const responsePromise = feishuResponseManager.waitForResponse(
+						eventId,
+						responseTimeout,
+					);
+
+					// 注册完成后再触发工作流执行
+					this.emit([this.helpers.returnJsonArray(enrichedData)], undefined, donePromise);
+					this.logger.info(`已处理事件: ${event}, event_id: ${eventId}`);
+
+					try {
+						const response = await responsePromise;
+						this.logger.info(`收到飞书响应节点响应: ${JSON.stringify(response)}`);
+						return response;
+					} catch (error) {
+						const errorMessage = error instanceof Error ? error.message : String(error);
+						this.logger.warn(`等待响应超时或出错: ${errorMessage}`);
+						return {};
+					}
+				}
+			};
+		}
 
 			const eventDispatcher = new EventDispatcher({ logger: this.logger, isAnyEvent }).register(
 				handlers,

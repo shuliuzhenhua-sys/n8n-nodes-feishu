@@ -29,6 +29,15 @@ export class RespondToFeishu implements INodeType {
 		outputs: `={{(${configuredOutputs})($nodeVersion, $parameter)}}`,
 		properties: [
 			{
+				displayName: '事件 ID',
+				name: 'eventId',
+				type: 'string',
+				required: true,
+				default: '={{ $json.event_id }}',
+				description: '飞书触发器的事件 ID，必须与触发器的 event_id 保持一致。默认使用表达式自动获取。',
+				placeholder: '{{ $json.event_id }}',
+			},
+			{
 				displayName: '响应内容',
 				name: 'respondWith',
 				type: 'options',
@@ -95,10 +104,14 @@ export class RespondToFeishu implements INodeType {
 			const item = items[itemIndex];
 			const json = item.json as IDataObject;
 
-			// 获取 correlationId（用于关联 Trigger 和 Response）
-			const correlationId = json.correlationId as string;
-			if (!correlationId) {
-				this.logger.warn(`未找到 correlationId，可能不是从飞书 Trigger 触发的`);
+			// 获取 event_id（必填参数，用于关联 Trigger 和 Response）
+			const eventId = this.getNodeParameter('eventId', itemIndex) as string;
+			if (!eventId) {
+				throw new NodeOperationError(
+					this.getNode(),
+					'事件 ID 不能为空，请确保填写了正确的 event_id（必须与飞书 Trigger 的 event_id 一致）',
+					{ itemIndex },
+				);
 			}
 
 			// 检查 responseMode（可选，不报错）
@@ -121,19 +134,17 @@ export class RespondToFeishu implements INodeType {
 				}
 			}
 
-			// 发送响应（使用 correlationId 关联）
-			const sent = correlationId
-				? feishuResponseManager.sendResponse(correlationId, responseData)
-				: false;
+			// 发送响应（使用 event_id 关联）
+			const sent = feishuResponseManager.sendResponse(eventId, responseData);
 
 			if (!sent) {
-				this.logger.warn(`未找到等待响应的关联 ID: ${correlationId}，可能已超时或已响应`);
+				this.logger.warn(`未找到等待响应的事件 ID: ${eventId}，可能已超时或已响应`);
 			}
 
 			// 构建响应输出项
 			responseItems.push({
 				json: {
-					correlationId,
+					eventId,
 					responseData,
 					sent,
 				},
@@ -144,7 +155,6 @@ export class RespondToFeishu implements INodeType {
 		const cleanedItems = items.map((item) => {
 			const cleanedJson = { ...item.json };
 			delete cleanedJson.responseMode;
-			delete cleanedJson.correlationId;
 			return {
 				...item,
 				json: cleanedJson,
