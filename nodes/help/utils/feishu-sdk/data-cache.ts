@@ -13,6 +13,8 @@ export class DataCache {
 
 	logger?: Logger;
 
+	private clearIntervalId?: ReturnType<typeof setInterval>;
+
 	constructor(params: { logger?: Logger }) {
 		this.cache = new Map();
 		this.logger = params.logger;
@@ -70,7 +72,7 @@ export class DataCache {
 	private clearAtInterval() {
 		// magic number，10s expired
 		const clearIntervalMs = 10000;
-		setInterval(() => {
+		this.clearIntervalId = setInterval(() => {
 			const now = Date.now();
 			this.cache.forEach((value, key) => {
 				const { create_time, trace_id, message_id } = value;
@@ -86,5 +88,9 @@ export class DataCache {
 
 	clear() {
 		this.cache.clear();
+		if (this.clearIntervalId) {
+			clearInterval(this.clearIntervalId);
+			this.clearIntervalId = undefined;
+		}
 	}
 }

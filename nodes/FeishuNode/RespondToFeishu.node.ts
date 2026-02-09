@@ -128,8 +128,6 @@ export class RespondToFeishu implements INodeType {
 					[FEISHU_RESPONSE_KEY]: responseData,
 				},
 			});
-
-			this.logger.info('飞书响应节点已准备响应数据');
 		}
 
 		// 清理输入数据（移除内部字段）
