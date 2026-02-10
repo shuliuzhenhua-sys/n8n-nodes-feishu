@@ -52,8 +52,10 @@ const AilyFileUploadOperate: ResourceOperations = {
 		const file_name = options.file_name || file.options?.filename || 'file';
 
 		const formData = new FormData();
-		formData.append('file_name', file_name);
-		formData.append('file', file.value);
+		formData.append('file', file.value, {
+			filename: file_name,
+			contentType: file.options?.contentType || 'application/octet-stream',
+		});
 
 		// 构建请求选项
 		const requestOptions: IHttpRequestOptions = {
@@ -67,7 +69,8 @@ const AilyFileUploadOperate: ResourceOperations = {
 			requestOptions.timeout = options.timeout;
 		}
 
-		return RequestUtils.request.call(this, requestOptions);
+		const response = await RequestUtils.request.call(this, requestOptions);
+		return response.files || response;
 	},
 };
 
