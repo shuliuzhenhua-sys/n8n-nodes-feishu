@@ -15,6 +15,16 @@ import { triggerEventProperty } from '../help/utils/properties';
 import { FEISHU_RESPONSE_KEY } from './RespondToFeishu.node';
 
 /**
+ * 需要同步响应的事件类型集合
+ * 飞书要求这些事件必须在 3 秒内返回响应数据，其他事件只需确认收到即可（fire-and-forget）
+ */
+const SYNC_RESPONSE_EVENTS = new Set([
+	'card.action.trigger',
+	'url.preview.get',
+	'profile.view.get',
+]);
+
+/**
  * 飞书响应提取结果
  */
 interface FeishuResponseResult {
@@ -236,22 +246,30 @@ export class FeishuNodeTrigger implements INodeType {
 
 		for (const event of events) {
 			handlers[event] = async (data) => {
-				const donePromise = this.helpers.createDeferredPromise<IRun>();
+				// 对于 any_event，需要在运行时从数据中获取实际事件类型；否则用注册时的事件类型
+				const actualEventType = isAnyEvent ? (data.event_type as string) : event;
+				const isSyncEvent = SYNC_RESPONSE_EVENTS.has(actualEventType);
 
-				// 使用飞书原生的 event_id 作为关联标识符（绝对唯一）
-				const eventId = data.event_id as string;
-				if (!eventId) {
-					this.logger.warn('飞书事件数据中未找到 event_id，响应模式可能无法正常工作');
-				}
-
-				// 将 responseMode 注入到数据中（用于后续节点判断）
 				const enrichedData = {
 					...data,
 					responseMode,
 				};
 
+				// 非同步事件：即发即忘，无需等待工作流完成也无需返回响应数据
+				if (!isSyncEvent) {
+					this.emit([this.helpers.returnJsonArray(enrichedData)]);
+					return {};
+				}
+
+				// ── 以下仅处理需要同步响应的事件（card.action.trigger / url.preview.get / profile.view.get）──
+
+				const donePromise = this.helpers.createDeferredPromise<IRun>();
+				const eventId = data.event_id as string;
+				if (!eventId) {
+					this.logger.warn('飞书同步事件数据中未找到 event_id，响应模式可能无法正常工作');
+				}
+
 				if (responseMode === 'immediately') {
-					// 立即响应模式：先 emit，然后立即返回
 					this.emit([this.helpers.returnJsonArray(enrichedData)], undefined, donePromise);
 					if (callbackToast) {
 						return {
@@ -262,70 +280,60 @@ export class FeishuNodeTrigger implements INodeType {
 						};
 					}
 					return {};
-				} else {
-					// 使用 Respond to Feishu 节点响应模式
-					// 新机制：通过 donePromise 等待工作流执行完成，然后从 IRun 结果中提取响应
-					// 这种方式支持多 Worker 模式，因为响应数据通过 n8n 的执行结果机制传递
-					if (!eventId) {
-						this.emit([this.helpers.returnJsonArray(enrichedData)], undefined, donePromise);
-						return {};
+				}
+
+				// responseNode 模式：等待工作流执行完成，从 IRun 结果中提取响应
+				if (!eventId) {
+					this.emit([this.helpers.returnJsonArray(enrichedData)], undefined, donePromise);
+					return {};
+				}
+
+				this.emit([this.helpers.returnJsonArray(enrichedData)], undefined, donePromise);
+
+				let timeoutId: ReturnType<typeof setTimeout> | undefined;
+				try {
+					const executionResult = await Promise.race([
+						donePromise.promise,
+						new Promise<never>((_, reject) => {
+							timeoutId = setTimeout(
+								() => reject(new Error(`等待工作流执行超时 (${responseTimeout}ms)`)),
+								responseTimeout,
+							);
+						}),
+					]);
+
+					clearTimeout(timeoutId);
+
+					if (!executionResult?.data?.resultData?.runData) {
+						this.logger.warn(
+							`[飞书响应模式] IRun 结果结构不完整，可能在多 Worker 模式下存在问题`,
+						);
 					}
 
-					// 触发工作流执行，并等待 donePromise 完成
-					this.emit([this.helpers.returnJsonArray(enrichedData)], undefined, donePromise);
+					const { response, hasMultiple, nodeName } = extractFeishuResponse(executionResult);
 
-					let timeoutId: ReturnType<typeof setTimeout> | undefined;
-					try {
-						// 使用 Promise.race 实现超时控制
-						const executionResult = await Promise.race([
-							donePromise.promise,
-							new Promise<never>((_, reject) => {
-								timeoutId = setTimeout(
-									() => reject(new Error(`等待工作流执行超时 (${responseTimeout}ms)`)),
-									responseTimeout,
-								);
-							}),
-						]);
-
-						// donePromise 先完成，清除超时定时器防止泄漏
-						clearTimeout(timeoutId);
-
-						// 验证 IRun 结果结构
-						if (!executionResult?.data?.resultData?.runData) {
-							this.logger.warn(
-								`[飞书响应模式] IRun 结果结构不完整，可能在多 Worker 模式下存在问题`,
-							);
-						}
-
-						// 从执行结果中提取飞书响应数据
-						const { response, hasMultiple, nodeName } = extractFeishuResponse(executionResult);
-
-						// 如果存在多个响应节点，发出警告
-						if (hasMultiple) {
-							this.logger.warn(
-								`[飞书响应模式] 检测到多个飞书响应节点，只有第一个节点 "${nodeName}" 的响应会被使用。` +
-									`建议：工作流中只保留一个"飞书响应"节点，或确保只有一个分支会执行。`,
-							);
-						}
-
-						if (response) {
-							return response;
-						} else {
-							this.logger.warn(
-								`[飞书响应模式] 未在执行结果中找到飞书响应节点的输出。请确保工作流中包含"飞书响应"节点。`,
-							);
-							return {};
-						}
-					} catch (error) {
-						// 超时触发时 timeoutId 已自然过期无需清除，
-						// 但若是其他异常导致进入 catch，仍需清除定时器
-						clearTimeout(timeoutId);
-						const errorMessage = error instanceof Error ? error.message : String(error);
+					if (hasMultiple) {
 						this.logger.warn(
-							`[飞书响应模式] 等待工作流执行超时或出错: ${errorMessage}，event_id: ${eventId}`,
+							`[飞书响应模式] 检测到多个飞书响应节点，只有第一个节点 "${nodeName}" 的响应会被使用。` +
+								`建议：工作流中只保留一个"飞书响应"节点，或确保只有一个分支会执行。`,
+						);
+					}
+
+					if (response) {
+						return response;
+					} else {
+						this.logger.warn(
+							`[飞书响应模式] 未在执行结果中找到飞书响应节点的输出。请确保工作流中包含"飞书响应"节点。`,
 						);
 						return {};
 					}
+				} catch (error) {
+					clearTimeout(timeoutId);
+					const errorMessage = error instanceof Error ? error.message : String(error);
+					this.logger.warn(
+						`[飞书响应模式] 等待工作流执行超时或出错: ${errorMessage}，event_id: ${eventId}`,
+					);
+					return {};
 				}
 			};
 		}
