@@ -1,12 +1,13 @@
-import {IDataObject, IExecuteFunctions, INodeProperties} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestOptions } from 'n8n-workflow';
 import { ResourceOperations } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
 import RequestUtils from '../../../help/utils/RequestUtils';
+import { batchingOption, timeoutOption } from '../../../help/utils/sharedOptions';
 
 export default {
 	name: '删除日程参与人',
 	value: 'calendar:deleteEventAttendees',
-	order: 80,
+	order: 140,
 	options: [
 		{
 			displayName: '日历 ID',
@@ -38,7 +39,8 @@ export default {
 			name: 'delete_ids',
 			type: 'json',
 			default: '[]',
-			description: '参考：https://open.feishu.cn/document/server-docs/calendar-v4/calendar-event-attendee/batch_delete#requestBody',
+			description:
+				'参考：https://open.feishu.cn/document/server-docs/calendar-v4/calendar-event-attendee/batch_delete#requestBody',
 		},
 		{
 			displayName: '是否发送通知',
@@ -51,7 +53,8 @@ export default {
 			name: 'instance_start_time_admin',
 			type: 'string',
 			default: '',
-			description: '要修改的重复日程实例的时间戳。仅用于修改重复日程中的某一实例，非重复日程无需填写。',
+			description:
+				'要修改的重复日程实例的时间戳。仅用于修改重复日程中的某一实例，非重复日程无需填写。',
 		},
 		{
 			displayName: '启用会议室管理员身份',
@@ -71,29 +74,48 @@ export default {
 			description: '用户 ID 类型。',
 			default: 'open_id',
 		},
-		{ displayName: 'Options', name: 'options', type: 'collection', placeholder: 'Add option', default: {}, options: [{ displayName: 'Batching', name: 'batching', placeholder: 'Add Batching', type: 'fixedCollection', typeOptions: { multipleValues: false }, default: { batch: {} }, options: [{ displayName: 'Batching', name: 'batch', values: [{ displayName: 'Items per Batch', name: 'batchSize', type: 'number', typeOptions: { minValue: 1 }, default: 50, description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。' }, { displayName: 'Batch Interval (Ms)', name: 'batchInterval', type: 'number', typeOptions: { minValue: 0 }, default: 1000, description: '每批请求之间的时间（毫秒）。0 表示禁用。' }] }] }, { displayName: 'Timeout', name: 'timeout', type: 'number', typeOptions: { minValue: 0 }, default: 0, description: '等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。' }] },
+		{
+			displayName: 'Options',
+			name: 'options',
+			type: 'collection',
+			placeholder: 'Add option',
+			default: {},
+			options: [batchingOption, timeoutOption],
+		},
 	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 		const calendarId = this.getNodeParameter('calendar_id', index) as string;
 		const eventId = this.getNodeParameter('event_id', index) as string;
-		const attendeeIds = NodeUtils.getNodeJsonData(this, "attendee_ids", index) as string[];
-		const deleteIds = NodeUtils.getNodeJsonData(this, "delete_ids", index) as IDataObject[];
+		const attendeeIds = NodeUtils.getNodeJsonData(this, 'attendee_ids', index) as string[];
+		const deleteIds = NodeUtils.getNodeJsonData(this, 'delete_ids', index) as IDataObject[];
 		const needNotification = this.getNodeParameter('need_notification', index, true) as boolean;
-		const instanceStartTimeAdmin = this.getNodeParameter('instance_start_time_admin', index, '') as string;
+		const instanceStartTimeAdmin = this.getNodeParameter(
+			'instance_start_time_admin',
+			index,
+			'',
+		) as string;
 		const isEnableAdmin = this.getNodeParameter('is_enable_admin', index, false) as boolean;
 		const userIdType = this.getNodeParameter('user_id_type', index, 'open_id') as string;
 		const options = this.getNodeParameter('options', index, {}) as {
-		timeout?: number;
-	};
+			timeout?: number;
+		};
 		const qs: IDataObject = {};
 		if (userIdType) qs.user_id_type = userIdType;
 
-		const body: IDataObject = { need_notification: needNotification, is_enable_admin: isEnableAdmin };
+		const body: IDataObject = {
+			need_notification: needNotification,
+			is_enable_admin: isEnableAdmin,
+		};
 		if (attendeeIds && attendeeIds.length > 0) body.attendee_ids = attendeeIds;
 		if (deleteIds && deleteIds.length > 0) body.delete_ids = deleteIds;
 		if (instanceStartTimeAdmin) body.instance_start_time_admin = instanceStartTimeAdmin;
 
-		const requestOptions: IDataObject = { method: 'POST', url: `/open-apis/calendar/v4/calendars/${calendarId}/events/${eventId}/attendees/batch_delete`, qs, body };
+		const requestOptions: IHttpRequestOptions = {
+			method: 'POST',
+			url: `/open-apis/calendar/v4/calendars/${calendarId}/events/${eventId}/attendees/batch_delete`,
+			qs,
+			body,
+		};
 		if (options.timeout) requestOptions.timeout = options.timeout;
 
 		return RequestUtils.request.call(this, requestOptions);

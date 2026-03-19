@@ -1,14 +1,12 @@
-import {
-	IDataObject,
-	IExecuteFunctions,
-	INodeProperties,
-} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestOptions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
+import { batchingOption, timeoutOption } from '../../../help/utils/sharedOptions';
 
 const MessageEditOperate: ResourceOperations = {
 	name: '编辑消息',
 	value: 'message:edit',
+	order: 30,
 	options: [
 		{
 			displayName: '待编辑的消息的ID',
@@ -70,60 +68,7 @@ const MessageEditOperate: ResourceOperations = {
 			type: 'collection',
 			placeholder: 'Add option',
 			default: {},
-			options: [
-				{
-					displayName: 'Batching',
-					name: 'batching',
-					placeholder: 'Add Batching',
-					type: 'fixedCollection',
-					typeOptions: {
-						multipleValues: false,
-					},
-					default: {
-						batch: {},
-					},
-					options: [
-						{
-							displayName: 'Batching',
-							name: 'batch',
-							values: [
-								{
-									displayName: 'Items per Batch',
-									name: 'batchSize',
-									type: 'number',
-									typeOptions: {
-										minValue: 1,
-									},
-									default: 50,
-									description:
-										'每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。',
-								},
-								{
-									displayName: 'Batch Interval (Ms)',
-									name: 'batchInterval',
-									type: 'number',
-									typeOptions: {
-										minValue: 0,
-									},
-									default: 1000,
-									description: '每批请求之间的时间（毫秒）。0 表示禁用。',
-								},
-							],
-						},
-					],
-				},
-				{
-					displayName: 'Timeout',
-					name: 'timeout',
-					type: 'number',
-					typeOptions: {
-						minValue: 0,
-					},
-					default: 0,
-					description:
-						'等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。',
-				},
-			],
+			options: [batchingOption, timeoutOption],
 		},
 	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
@@ -143,8 +88,7 @@ const MessageEditOperate: ResourceOperations = {
 			}
 			case 'post': {
 				const post_content = this.getNodeParameter('post_content', index);
-				content =
-					typeof post_content === 'string' ? post_content : JSON.stringify(post_content);
+				content = typeof post_content === 'string' ? post_content : JSON.stringify(post_content);
 				break;
 			}
 			default:
@@ -157,7 +101,7 @@ const MessageEditOperate: ResourceOperations = {
 		};
 
 		// 构建请求选项
-		const requestOptions: IDataObject = {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'PUT',
 			url: `/open-apis/im/v1/messages/${message_id}`,
 			body,

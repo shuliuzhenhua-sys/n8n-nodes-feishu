@@ -1,89 +1,113 @@
-import { IExecuteFunctions, IRequestOptions } from 'n8n-workflow';
-import {
-	IAdditionalCredentialOptions,
-	IOAuth2Options,
-} from 'n8n-workflow/dist/esm/interfaces';
+import { IExecuteFunctions, IHttpRequestOptions, JsonObject, NodeApiError } from 'n8n-workflow';
 import { Credentials } from '../type/enums';
 
+
 class RequestUtils {
+	/**
+	 * 处理飞书 API 响应
+	 * - 二进制数据直接返回
+	 * - 检查 code 是否为 0，非 0 则抛出错误
+	 * - 返回 data 字段或原始响应
+	 */
+	private static processResponse(res: any) {
+		// 对于二进制数据（如文件下载），直接返回
+		if (res instanceof Buffer || res instanceof ArrayBuffer || res instanceof Uint8Array) {
+			return res;
+		}
+
+		if (res.code !== 0) {
+			throw new Error(`Request Feishu API Error: ${res.code}, ${res.msg}`);
+		}
+		return res.data ?? res;
+	}
+
 	static async originRequest(
 		this: IExecuteFunctions,
-		options: IRequestOptions,
+		options: IHttpRequestOptions,
 		clearAccessToken = false,
-	): Promise<any> {
-		let authentication = this.getNodeParameter('authentication', 0) as string;
+	) {
+		const authenticationMethod = this.getNodeParameter(
+			'authentication',
+			0,
+			Credentials.FeishuCredentialsApi,
+		) as string;
 
-		let additionalCredentialOptions = {} as IAdditionalCredentialOptions
+		const credentials = await this.getCredentials(authenticationMethod);
+		options.baseURL = credentials.baseURL as string;
 
-		if (authentication === Credentials.FeishuCredentialsApi) {
-			const credentials = await this.getCredentials(authentication);
-
-			options.baseURL = `https://${credentials.baseUrl}`;
-
-			additionalCredentialOptions = {
-				// @ts-ignore
+		if (authenticationMethod === Credentials.FeishuCredentialsApi) {
+			// Replace the accessToken with an empty string if clearAccessToken is true, so the preAuthentication method can be triggered
+			// and a new access token can be fetched
+			const additionalCredentialOptions = {
 				credentialsDecrypted: {
+					id: Credentials.Id,
+					name: Credentials.FeishuCredentialsApi,
+					type: Credentials.Type,
 					data: {
 						...credentials,
 						accessToken: clearAccessToken ? '' : credentials.accessToken,
 					},
 				},
 			};
-		} else if (authentication === Credentials.FeishuOauth2Api) {
 
-			options.baseURL = `https://open.feishu.cn`;
-
-			let oauth2 = {
-				keepBearer: true,
-				includeCredentialsOnRefreshOnBody: true,
-			} as IOAuth2Options
-
-			return this.helpers.requestOAuth2
-				.call(this, authentication, options, oauth2)
+			return this.helpers.httpRequestWithAuthentication.call(
+				this,
+				authenticationMethod,
+				options,
+				additionalCredentialOptions,
+			);
 		}
 
-		return this.helpers.requestWithAuthentication
-			.call(this, authentication, options, additionalCredentialOptions)
+		return this.helpers.httpRequestWithAuthentication.call(this, authenticationMethod, options);
 	}
 
-	static async request(
-		this: IExecuteFunctions,
-		options: IRequestOptions,
-		retryOnAuthError = true,
-	): Promise<any> {
+	static async request(this: IExecuteFunctions, options: IHttpRequestOptions) {
 		if (options.json === undefined) options.json = true;
 
-		return RequestUtils.originRequest.call(this, options).then((data) => {
-			const handleResponse = (data: any) => {
-				if (data.code && data.code !== 0) {
-					throw new Error(
-						`Request Error: ${data.code}, ${data.msg} \n ` + JSON.stringify(data.error),
-					);
+		return RequestUtils.originRequest
+			.call(this, options)
+			.then((res) => RequestUtils.processResponse(res))
+			.catch((error) => {
+			if (error.context && error.context.data) {
+				let errorData: any = {};
+
+				if (error.context.data.code) {
+					// 已经是解析好的对象
+					errorData = error.context.data;
+				} else {
+					// 尝试从 Buffer 解析 JSON（下载资源操作返回的是 arraybuffer 格式）
+					const buffer = Buffer.from(error.context.data);
+					if (buffer.length > 0) {
+						try {
+							errorData = JSON.parse(buffer.toString('utf-8'));
+						} catch {
+							// JSON 解析失败，直接抛出原始错误
+							throw error;
+						}
+					} else {
+						// Buffer 为空（如 404 等 HTTP 错误），直接抛出原始错误
+						throw error;
+					}
 				}
-				return data.data ?? data;
-			};
 
-			const authentication = this.getNodeParameter('authentication', 0) as string;
+				const { code, msg, error: feishuError } = errorData;
 
-			// 处理一次accesstoken过期的情况
-			if (data.code && data.code === 99991663) {
-				if (authentication === Credentials.FeishuOauth2Api && retryOnAuthError) {
-					return this.helpers
-						.refreshOAuth2Token.call(this, authentication, {
-							includeCredentialsOnRefreshOnBody: true,
-						})
-						.then(() => RequestUtils.request.call(this, options, false));
+				if (code === 99991663) {
+					return RequestUtils.originRequest
+						.call(this, options, true)
+						.then((res) => RequestUtils.processResponse(res));
 				}
 
-				if (authentication === Credentials.FeishuCredentialsApi) {
-					return RequestUtils.originRequest.call(this, options, true).then((data) => {
-						return handleResponse(data);
+				if (code !== 0) {
+					throw new NodeApiError(this.getNode(), error as JsonObject, {
+						message: `Request Feishu API Error: ${code}, ${msg}`,
+						description: feishuError?.troubleshooter || '',
 					});
 				}
 			}
 
-			return handleResponse(data);
-		});
+			throw error;
+			});
 	}
 }
 

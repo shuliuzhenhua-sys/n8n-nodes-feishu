@@ -3,42 +3,34 @@ import {
 	IExecuteFunctions,
 	INodeProperties,
 	IHttpRequestMethods,
+	IHttpRequestOptions,
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
+import { timeoutOption, paginationOptions } from '../../../help/utils/sharedOptions';
 
 const WikiSpacesGetListOperate: ResourceOperations = {
 	name: '获取知识空间列表',
 	value: 'wiki:spaces:list',
-	order: 100,
+	order: 10,
 	options: [
+		paginationOptions.returnAll,
+		paginationOptions.limit(50),
 		{
-			displayName: 'Return All',
-			name: 'returnAll',
-			type: 'boolean',
-			default: false,
-			description: 'Whether to return all results or only up to a given limit',
-		},
-		{
-			displayName: 'Limit',
-			name: 'limit',
-			type: 'number',
-			default: 50,
-			typeOptions: {
-				minValue: 1,
-				maxValue: 50,
-			},
-			displayOptions: {
-				show: {
-					returnAll: [false],
-				},
-			},
-			description: 'Max number of results to return',
+			displayName: 'Options',
+			name: 'options',
+			type: 'collection',
+			placeholder: 'Add option',
+			default: {},
+			options: [timeoutOption],
 		},
 	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject[]> {
 		const returnAll = this.getNodeParameter('returnAll', index, false) as boolean;
 		const limit = this.getNodeParameter('limit', index, 50) as number;
+		const options = this.getNodeParameter('options', index, {}) as {
+			timeout?: number;
+		};
 
 		// 统一的请求函数
 		const fetchPage = async (pageToken: string | undefined, pageSize: number) => {
@@ -50,11 +42,15 @@ const WikiSpacesGetListOperate: ResourceOperations = {
 				qs.page_token = pageToken;
 			}
 
-			const requestOptions: IDataObject = {
+			const requestOptions: IHttpRequestOptions = {
 				method: 'GET' as IHttpRequestMethods,
 				url: '/open-apis/wiki/v2/spaces',
 				qs,
 			};
+
+			if (options.timeout) {
+				requestOptions.timeout = options.timeout;
+			}
 
 			const response = await RequestUtils.request.call(this, requestOptions);
 

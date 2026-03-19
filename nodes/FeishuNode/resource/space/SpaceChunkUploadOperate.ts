@@ -1,7 +1,14 @@
-import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, IHttpRequestOptions, NodeOperationError } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
+import FormData from 'form-data';
+import {
+	fileFieldNameOption,
+	fileNameOption,
+	batchingOption,
+	timeoutOption,
+} from '../../../help/utils/sharedOptions';
 
 /**
  * 计算 Adler-32 校验和
@@ -52,7 +59,8 @@ async function runWithConcurrency<T>(
 const SpaceChunkUploadOperate: ResourceOperations = {
 	name: '分片上传文件',
 	value: 'space:chunkUpload',
-	order: 52,
+	order: 70,
+	description: '将指定文件上传至云空间指定目录中，支持上传大于20MB的文件',
 	options: [
 		{
 			displayName: '文件夹 Token',
@@ -62,14 +70,7 @@ const SpaceChunkUploadOperate: ResourceOperations = {
 			default: '',
 			description: '云空间中文件夹的 token，获取方式见飞书文档',
 		},
-		{
-			displayName: '二进制文件字段',
-			name: 'fileFieldName',
-			type: 'string',
-			default: 'data',
-			required: true,
-			description: '输入数据中包含文件二进制数据的字段名',
-		},
+		fileFieldNameOption,
 		{
 			displayName: '选项',
 			name: 'options',
@@ -77,13 +78,7 @@ const SpaceChunkUploadOperate: ResourceOperations = {
 			placeholder: '添加选项',
 			default: {},
 			options: [
-				{
-					displayName: '文件名',
-					name: 'file_name',
-					type: 'string',
-					default: '',
-					description: '自定义文件名，例如：demo.pdf。留空则从二进制数据中自动获取。最大长度250字符',
-				},
+				fileNameOption,
 				{
 					displayName: '计算校验和',
 					name: 'enableChecksum',
@@ -102,16 +97,10 @@ const SpaceChunkUploadOperate: ResourceOperations = {
 					default: 5,
 					description: '分片上传的最大并发数，默认 5（飞书 API 限制 5 QPS）',
 				},
+				batchingOption,
 				{
-					displayName: 'Timeout',
-					name: 'timeout',
-					type: 'number',
-					typeOptions: {
-						minValue: 0,
-					},
-					default: 0,
-					description:
-						'每个分片上传的超时时间（毫秒），超过此时间将中止请求。0 表示不限制超时。',
+					...timeoutOption,
+					description: '每个分片上传的超时时间（毫秒），超过此时间将中止请求。0 表示不限制超时。',
 				},
 			],
 		},
@@ -129,7 +118,10 @@ const SpaceChunkUploadOperate: ResourceOperations = {
 		const file = (await NodeUtils.buildUploadFileData.call(this, fileFieldName, index)) as any;
 
 		if (!file || !file.value) {
-			throw new NodeOperationError(this.getNode(), '未找到文件数据，请检查二进制文件字段名是否正确');
+			throw new NodeOperationError(
+				this.getNode(),
+				'未找到文件数据，请检查二进制文件字段名是否正确',
+			);
 		}
 
 		// 获取文件缓冲区
@@ -139,7 +131,10 @@ const SpaceChunkUploadOperate: ResourceOperations = {
 		// 优先使用用户定义的文件名，否则从二进制数据中获取
 		const file_name = options.file_name || file.options?.filename;
 		if (!file_name) {
-			throw new NodeOperationError(this.getNode(), '文件名不能为空，请在选项中指定文件名或确保二进制数据包含文件名');
+			throw new NodeOperationError(
+				this.getNode(),
+				'文件名不能为空，请在选项中指定文件名或确保二进制数据包含文件名',
+			);
 		}
 
 		if (file_name.length > 250) {
@@ -151,7 +146,7 @@ const SpaceChunkUploadOperate: ResourceOperations = {
 		const timeout = options.timeout || 0;
 
 		// 构建请求选项
-		const requestOptions: IDataObject = {};
+		const requestOptions: IHttpRequestOptions = { method: 'POST', url: '' };
 		if (timeout) {
 			requestOptions.timeout = timeout;
 		}
@@ -189,32 +184,25 @@ const SpaceChunkUploadOperate: ResourceOperations = {
 				const chunkSize = chunkBuffer.length;
 
 				// 构建分片上传表单数据
-				const formData: IDataObject = {
-					upload_id,
-					seq,
-					size: chunkSize,
-					file: {
-						value: chunkBuffer,
-						options: {
-							filename: `part_${seq}`,
-							contentType: 'application/octet-stream',
-						},
-					},
-				};
+				const formData = new FormData();
+				formData.append('upload_id', upload_id);
+				formData.append('seq', seq);
+				formData.append('size', chunkSize);
+				formData.append('file', chunkBuffer);
 
 				// 添加校验和（如果启用）
 				if (enableChecksum) {
 					const checksum = calculateAdler32(chunkBuffer);
-					formData.checksum = checksum.toString();
+					formData.append('checksum', checksum.toString());
 				}
 
 				// 上传分片
 				const partResponse = await boundRequest({
 					method: 'POST',
 					url: '/open-apis/drive/v1/files/upload_part',
-					formData,
-					...requestOptions,
-				});
+					body: formData,
+					timeout: requestOptions.timeout,
+				} as IHttpRequestOptions);
 
 				return {
 					seq,
@@ -250,4 +238,3 @@ const SpaceChunkUploadOperate: ResourceOperations = {
 };
 
 export default SpaceChunkUploadOperate;
-

@@ -1,10 +1,12 @@
-import {IDataObject, IExecuteFunctions, INodeProperties} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestOptions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
+import { batchingOption, timeoutOption } from '../../../help/utils/sharedOptions';
 
 const DocBlockConvertOperate: ResourceOperations = {
 	name: 'Markdown/HTML 内容转换为文档块',
 	value: 'doc:block:convert',
+	order: 110,
 	options: [
 		{
 			displayName: '内容类型',
@@ -18,13 +20,13 @@ const DocBlockConvertOperate: ResourceOperations = {
 					value: 'markdown',
 					description: 'Markdown 格式',
 				},
-			{
-				name: 'HTML',
-				value: 'html',
-				description: 'HTML 格式',
-			},
-		],
-	},
+				{
+					name: 'HTML',
+					value: 'html',
+					description: 'HTML 格式',
+				},
+			],
+		},
 		{
 			displayName: '文本内容',
 			name: 'content',
@@ -52,26 +54,33 @@ const DocBlockConvertOperate: ResourceOperations = {
 					value: 'union_id',
 					description: '标识一个用户在某个应用开发商下的身份',
 				},
-			{
-				name: 'User_id',
-				value: 'user_id',
-				description: '标识一个用户在某个租户内的身份',
-			},
-		],
-	},
-		{ displayName: 'Options', name: 'options', type: 'collection', placeholder: 'Add option', default: {}, options: [{ displayName: 'Batching', name: 'batching', placeholder: 'Add Batching', type: 'fixedCollection', typeOptions: { multipleValues: false }, default: { batch: {} }, options: [{ displayName: 'Batching', name: 'batch', values: [{ displayName: 'Items per Batch', name: 'batchSize', type: 'number', typeOptions: { minValue: 1 }, default: 50, description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。' }, { displayName: 'Batch Interval (Ms)', name: 'batchInterval', type: 'number', typeOptions: { minValue: 0 }, default: 1000, description: '每批请求之间的时间（毫秒）。0 表示禁用。' }] }] }, { displayName: 'Timeout', name: 'timeout', type: 'number', typeOptions: { minValue: 0 }, default: 0, description: '等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。' }] },
+				{
+					name: 'User_id',
+					value: 'user_id',
+					description: '标识一个用户在某个租户内的身份',
+				},
+			],
+		},
+		{
+			displayName: 'Options',
+			name: 'options',
+			type: 'collection',
+			placeholder: 'Add option',
+			default: {},
+			options: [batchingOption, timeoutOption],
+		},
 	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 		const content_type = this.getNodeParameter('content_type', index) as string;
 		const content = this.getNodeParameter('content', index) as string;
 		const user_id_type = this.getNodeParameter('user_id_type', index, 'open_id') as string;
 		const options = this.getNodeParameter('options', index, {}) as {
-		timeout?: number;
-	};
+			timeout?: number;
+		};
 		const qs: IDataObject = { user_id_type };
 		const body: IDataObject = { content_type, content };
 
-		const requestOptions: IDataObject = {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'POST',
 			url: '/open-apis/docx/v1/documents/blocks/convert',
 			qs,

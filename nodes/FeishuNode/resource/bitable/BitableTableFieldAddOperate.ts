@@ -1,32 +1,29 @@
-import {
-	IDataObject,
-	IExecuteFunctions,
-	INodeProperties,
-} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestOptions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
-import NodeUtils from "../../../help/utils/NodeUtils";
+import NodeUtils from '../../../help/utils/NodeUtils';
+import { batchingOption, timeoutOption } from '../../../help/utils/sharedOptions';
 
-export default  {
+export default {
 	name: '新增字段',
 	value: 'bitable:table:field:add',
-	order: 60,
+	order: 250,
 	options: [
 		{
-			displayName: '多维表格 Token',
+			displayName: '多维表格 App 的唯一标识',
 			name: 'app_toke',
 			type: 'string',
 			required: true,
 			default: '',
-			description: '多维表格 App 的唯一标识。',
+			description: '多维表格 App 的唯一标识。不同形态的多维表格，其 app_token 的获取方式不同，参考<a href="https://open.feishu.cn/document/ukTMukTMukTM/uUDN04SN0QjL1QDN/bitable-overview">多维表格 app_token 获取方式</a>获取。',
 		},
 		{
-			displayName: '多维表格 ID',
+			displayName: '多维表格数据表的唯一标识',
 			name: 'table_id',
 			type: 'string',
 			required: true,
 			default: '',
-			description: '多维表格数据表的唯一标识。',
+			description: '你可通过多维表格 URL 获取 table_id',
 		},
 
 		{
@@ -34,7 +31,8 @@ export default  {
 			name: 'client_toke',
 			type: 'string',
 			default: '',
-			description: '操作的唯一标识，与接口返回值的 client_token 相对应，用于幂等的进行更新操作。此值为空表示将发起一次新的请求，此值非空表示幂等的进行更新操作',
+			description:
+				'操作的唯一标识，与接口返回值的 client_token 相对应，用于幂等的进行更新操作。此值为空表示将发起一次新的请求，此值非空表示幂等的进行更新操作',
 		},
 
 		{
@@ -52,10 +50,7 @@ export default  {
 			type: 'collection',
 			placeholder: 'Add option',
 			default: {},
-			options: [
-				{ displayName: 'Batching', name: 'batching', placeholder: 'Add Batching', type: 'fixedCollection', typeOptions: { multipleValues: false }, default: { batch: {} }, options: [{ displayName: 'Batching', name: 'batch', values: [{ displayName: 'Items per Batch', name: 'batchSize', type: 'number', typeOptions: { minValue: 1 }, default: 50, description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。' }, { displayName: 'Batch Interval (Ms)', name: 'batchInterval', type: 'number', typeOptions: { minValue: 0 }, default: 1000, description: '每批请求之间的时间（毫秒）。0 表示禁用。' }] }] },
-				{ displayName: 'Timeout', name: 'timeout', type: 'number', typeOptions: { minValue: 0 }, default: 0, description: '等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。' },
-			],
+			options: [batchingOption, timeoutOption],
 		},
 	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
@@ -64,12 +59,17 @@ export default  {
 		const client_token = this.getNodeParameter('client_toke', index) as string;
 		const body = NodeUtils.getNodeJsonData(this, 'body', index) as IDataObject;
 		const options = this.getNodeParameter('options', index, {}) as {
-		timeout?: number;
-	};
-		const qs : any = {}
-		if (client_token) qs.client_token = client_token
+			timeout?: number;
+		};
+		const qs: any = {};
+		if (client_token) qs.client_token = client_token;
 
-		const requestOptions: IDataObject = { method: 'POST', url: `/open-apis/bitable/v1/apps/${app_token}/tables/${table_id}/fields`, qs, body };
+		const requestOptions: IHttpRequestOptions = {
+			method: 'POST',
+			url: `/open-apis/bitable/v1/apps/${app_token}/tables/${table_id}/fields`,
+			qs,
+			body,
+		};
 		if (options.timeout) requestOptions.timeout = options.timeout;
 
 		return RequestUtils.request.call(this, requestOptions);

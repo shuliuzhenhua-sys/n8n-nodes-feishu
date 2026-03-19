@@ -3,13 +3,16 @@ import {
 	IExecuteFunctions,
 	INodeProperties,
 	IHttpRequestMethods,
+	IHttpRequestOptions,
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
+import { batchingOption, timeoutOption } from '../../../help/utils/sharedOptions';
 
 const AilyFileGetOperate: ResourceOperations = {
 	name: '读取文件基础信息',
 	value: 'aily:fileGet',
+	order: 10,
 	options: [
 		{
 			displayName: '文件 ID',
@@ -33,17 +36,8 @@ const AilyFileGetOperate: ResourceOperations = {
 					default: false,
 					description: 'Whether to get the preview URL of the file based on file_id',
 				},
-				{
-					displayName: 'Timeout',
-					name: 'timeout',
-					type: 'number',
-					typeOptions: {
-						minValue: 0,
-					},
-					default: 0,
-					description:
-						'等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。',
-				},
+				batchingOption,
+				timeoutOption,
 			],
 		},
 	] as INodeProperties[],
@@ -61,7 +55,7 @@ const AilyFileGetOperate: ResourceOperations = {
 		}
 
 		// 构建请求选项
-		const requestOptions: IDataObject = {
+		const requestOptions: IHttpRequestOptions = {
 			method: 'GET' as IHttpRequestMethods,
 			url: `/open-apis/aily/v1/files/${file_id}`,
 			qs,
@@ -79,4 +73,3 @@ const AilyFileGetOperate: ResourceOperations = {
 };
 
 export default AilyFileGetOperate;
-

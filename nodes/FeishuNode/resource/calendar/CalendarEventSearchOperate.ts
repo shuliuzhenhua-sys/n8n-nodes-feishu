@@ -1,12 +1,19 @@
-import {IDataObject, IExecuteFunctions, INodeProperties} from 'n8n-workflow';
+import {
+	IDataObject,
+	IExecuteFunctions,
+	INodeProperties,
+	IHttpRequestOptions,
+	IHttpRequestMethods,
+} from 'n8n-workflow';
 import { ResourceOperations } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
 import RequestUtils from '../../../help/utils/RequestUtils';
+import { timeoutOption, paginationOptions } from '../../../help/utils/sharedOptions';
 
 export default {
 	name: '搜索日程',
 	value: 'calendar:searchEvents',
-	order: 90,
+	order: 80,
 	options: [
 		{
 			displayName: '日历 ID',
@@ -30,23 +37,11 @@ export default {
 			name: 'filter',
 			type: 'json',
 			default: '{}',
-			description: '参考 https://open.feishu.cn/document/server-docs/calendar-v4/calendar-event/search#requestBody',
+			description:
+				'参考 https://open.feishu.cn/document/server-docs/calendar-v4/calendar-event/search#requestBody',
 		},
-		{
-			displayName: '分页标记',
-			name: 'page_token',
-			// eslint-disable-next-line n8n-nodes-base/node-param-type-options-password-missing
-			type: 'string',
-			default: '',
-			description: '分页标记，第一次请求不填，分页查询结果还有更多项时会返回新的 page_token。',
-		},
-		{
-			displayName: '每页数量',
-			name: 'page_size',
-			type: 'number',
-			default: 20,
-			description: '一次调用所返回的最大日程数量。最小值为10，最大值为100。',
-		},
+		paginationOptions.returnAll,
+		paginationOptions.limit(100, 10),
 		{
 			displayName: '用户 ID 类型',
 			name: 'user_id_type',
@@ -59,29 +54,94 @@ export default {
 			description: '用户 ID 类型。',
 			default: 'open_id',
 		},
-		{ displayName: 'Options', name: 'options', type: 'collection', placeholder: 'Add option', default: {}, options: [{ displayName: 'Batching', name: 'batching', placeholder: 'Add Batching', type: 'fixedCollection', typeOptions: { multipleValues: false }, default: { batch: {} }, options: [{ displayName: 'Batching', name: 'batch', values: [{ displayName: 'Items per Batch', name: 'batchSize', type: 'number', typeOptions: { minValue: 1 }, default: 50, description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。' }, { displayName: 'Batch Interval (Ms)', name: 'batchInterval', type: 'number', typeOptions: { minValue: 0 }, default: 1000, description: '每批请求之间的时间（毫秒）。0 表示禁用。' }] }] }, { displayName: 'Timeout', name: 'timeout', type: 'number', typeOptions: { minValue: 0 }, default: 0, description: '等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。' }] },
+		{
+			displayName: 'Options',
+			name: 'options',
+			type: 'collection',
+			placeholder: 'Add option',
+			default: {},
+			options: [timeoutOption],
+		},
 	] as INodeProperties[],
-	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
+	async call(this: IExecuteFunctions, index: number): Promise<IDataObject[]> {
 		const calendarId = this.getNodeParameter('calendar_id', index) as string;
 		const query = this.getNodeParameter('query', index) as string;
-		const filter = NodeUtils.getNodeJsonData(this, "filter", index) as IDataObject;
-		const pageToken = this.getNodeParameter('page_token', index, '') as string;
-		const pageSize = this.getNodeParameter('page_size', index, 20) as number;
+		const filter = NodeUtils.getNodeJsonData(this, 'filter', index) as IDataObject;
+		const returnAll = this.getNodeParameter('returnAll', index, false) as boolean;
+		const limit = this.getNodeParameter('limit', index, 20) as number;
 		const userIdType = this.getNodeParameter('user_id_type', index, 'open_id') as string;
 		const options = this.getNodeParameter('options', index, {}) as {
-		timeout?: number;
-	};
-		const qs: IDataObject = {};
-		if (pageToken) qs.page_token = pageToken;
-		if (pageSize) qs.page_size = pageSize;
-		if (userIdType) qs.user_id_type = userIdType;
+			timeout?: number;
+		};
 
-		const body: IDataObject = { query };
-		if (Object.keys(filter).length > 0) body.filter = filter;
+		// 统一的请求函数
+		const fetchPage = async (pageToken: string | undefined, pageSize: number) => {
+			const qs: IDataObject = {
+				page_size: pageSize,
+			};
 
-		const requestOptions: IDataObject = { method: 'POST', url: `/open-apis/calendar/v4/calendars/${calendarId}/events/search`, qs, body };
-		if (options.timeout) requestOptions.timeout = options.timeout;
+			if (userIdType) {
+				qs.user_id_type = userIdType;
+			}
 
-		return RequestUtils.request.call(this, requestOptions);
+			if (pageToken) {
+				qs.page_token = pageToken;
+			}
+
+			const body: IDataObject = { query };
+			if (Object.keys(filter).length > 0) {
+				body.filter = filter;
+			}
+
+			const requestOptions: IHttpRequestOptions = {
+				method: 'POST' as IHttpRequestMethods,
+				url: `/open-apis/calendar/v4/calendars/${calendarId}/events/search`,
+				qs,
+				body,
+			};
+
+			if (options.timeout) {
+				requestOptions.timeout = options.timeout;
+			}
+
+			const response = await RequestUtils.request.call(this, requestOptions);
+
+			const responseData = response as {
+				items?: IDataObject[];
+				page_token?: string;
+				has_more?: boolean;
+			};
+
+			return {
+				items: responseData.items || [],
+				pageToken: responseData.page_token,
+				hasMore: responseData.has_more || false,
+			};
+		};
+
+		// 处理分页逻辑
+		if (returnAll) {
+			let allResults: IDataObject[] = [];
+			let pageToken: string | undefined = undefined;
+			const pageSize = 100; // 使用最大分页大小以减少请求次数
+
+			while (true) {
+				const { items, pageToken: nextPageToken, hasMore } = await fetchPage(pageToken, pageSize);
+				allResults = allResults.concat(items);
+
+				// 检查是否还有更多数据
+				if (!hasMore || !nextPageToken) {
+					break;
+				}
+
+				pageToken = nextPageToken;
+			}
+
+			return allResults;
+		} else {
+			// 单次请求，返回限制数量的数据
+			const { items } = await fetchPage(undefined, limit);
+			return items;
+		}
 	},
 } as ResourceOperations;

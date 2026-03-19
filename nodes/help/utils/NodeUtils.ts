@@ -1,52 +1,138 @@
-import {IDataObject, IExecuteFunctions, NodeOperationError} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
 
+/**
+ * 上传文件数据结构
+ */
+interface IUploadFileData {
+	value: Buffer;
+	options: {
+		filename?: string;
+		filelength?: number;
+		contentType?: string;
+	};
+}
+
+/**
+ * 节点工具类
+ */
 class NodeUtils {
-
+	/**
+	 * 从数据对象中获取固定集合
+	 * @param data 数据对象
+	 * @param collectionName 集合名称
+	 * @returns 集合数组
+	 */
 	static getNodeFixedCollection(data: IDataObject, collectionName: string): IDataObject[] {
-		return data[collectionName] as IDataObject[] || [];
+		const collection = data[collectionName];
+		if (Array.isArray(collection)) {
+			return collection as IDataObject[];
+		}
+		return [];
 	}
 
-	static getNodeFixedCollectionList(data: IDataObject, collectionName: string, propertyName: string): any[] {
+	/**
+	 * 从固定集合中提取指定属性的值列表
+	 * @param data 数据对象
+	 * @param collectionName 集合名称
+	 * @param propertyName 属性名称
+	 * @returns 属性值数组
+	 */
+	static getNodeFixedCollectionList<T = unknown>(
+		data: IDataObject,
+		collectionName: string,
+		propertyName: string,
+	): T[] {
 		const list = this.getNodeFixedCollection(data, collectionName);
+		const result: T[] = [];
 
-		const result: IDataObject[] = [];
 		for (const item of list) {
-			// @ts-ignore
-			result.push(item[propertyName]);
+			if (item && typeof item === 'object' && propertyName in item) {
+				result.push(item[propertyName] as T);
+			}
 		}
 
 		return result;
 	}
 
-	static async buildUploadFileData(this: IExecuteFunctions, inputDataFieldName: string, index: number = 0) {
+	/**
+	 * 构建上传文件数据
+	 * @param inputDataFieldName 输入数据字段名
+	 * @param index 项目索引
+	 * @returns 上传文件数据对象
+	 */
+	static async buildUploadFileData(
+		this: IExecuteFunctions,
+		inputDataFieldName: string,
+		index = 0,
+	): Promise<IUploadFileData> {
 		const binaryData = this.helpers.assertBinaryData(index, inputDataFieldName);
-		if (!binaryData){
-			throw new Error('未找到二进制数据');
+
+		if (!binaryData) {
+			throw new NodeOperationError(this.getNode(), '未找到二进制数据', { itemIndex: index });
 		}
+
 		const buffer = await this.helpers.getBinaryDataBuffer(index, inputDataFieldName);
+
+		// 解析文件大小：fileSize 可能是字符串或数字
+		let fileLength: number | undefined;
+		if (binaryData.fileSize !== undefined) {
+			fileLength =
+				typeof binaryData.fileSize === 'string'
+					? parseInt(binaryData.fileSize, 10)
+					: binaryData.fileSize;
+		}
 
 		return {
 			value: buffer,
 			options: {
 				filename: binaryData.fileName,
-				filelength: binaryData.fileSize,
+				filelength: fileLength,
 				contentType: binaryData.mimeType,
 			},
 		};
 	}
 
+	/**
+	 * 获取节点参数并解析为 JSON
+	 * @param context 执行上下文
+	 * @param propertyName 参数名称
+	 * @param index 项目索引
+	 * @param failValue 解析失败时的默认值
+	 * @returns 解析后的 JSON 对象
+	 */
+	static getNodeJsonData<T = unknown>(
+		context: IExecuteFunctions,
+		propertyName: string,
+		index: number,
+		failValue?: T,
+	): T {
+		const text = context.getNodeParameter(propertyName, index, failValue);
 
-	static getNodeJsonData(data: IExecuteFunctions, propertyName: string, index: number, failValue?: any): any {
-		const text = data.getNodeParameter(propertyName, index, failValue);
-		if (!text) {
-			return failValue;
+		if (text === undefined || text === null || text === '') {
+			return failValue as T;
 		}
-		try {
-			// @ts-ignore
-			return JSON.parse(text);
-		} catch (e) {
-			throw new NodeOperationError(data.getNode(), `无法解析字段[${propertyName}] JSON 数据: ${e.message}`);
+
+		// 如果已经是对象，直接返回
+		if (typeof text === 'object') {
+			return text as T;
 		}
+
+		// 尝试解析 JSON 字符串
+		if (typeof text === 'string') {
+			try {
+				return JSON.parse(text) as T;
+			} catch (error) {
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				throw new NodeOperationError(
+					context.getNode(),
+					`无法解析字段 [${propertyName}] 的 JSON 数据: ${errorMessage}`,
+					{ itemIndex: index },
+				);
+			}
+		}
+
+		// 其他类型直接返回
+		return text as T;
 	}
 }
 

@@ -7,6 +7,11 @@ import {
 } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
+import {
+	fileNameOption,
+	batchingOption,
+	timeoutOption,
+} from '../../../help/utils/sharedOptions';
 
 // 导出任务状态枚举
 const JOB_STATUS = {
@@ -40,6 +45,8 @@ const JOB_ERROR_MESSAGES: Record<number, string> = {
 const SpaceExportOperate: ResourceOperations = {
 	name: '导出云文档',
 	value: 'space:export',
+	order: 50,
+	description: '导出云文档指将飞书文档、电子表格、多维表格导出为本地文件，包括 Word、Excel、PDF、CSV 格式',
 	options: [
 		{
 			displayName: '云文档类型',
@@ -71,13 +78,33 @@ const SpaceExportOperate: ResourceOperations = {
 			options: [
 				{ name: 'Microsoft Word 格式 (DOCX)', value: 'docx' },
 				{ name: 'PDF 格式 (PDF)', value: 'pdf' },
-				{ name: 'Microsoft Excel 格式 (XLSX)', value: 'xlsx' },
-				{ name: 'CSV 格式 (CSV)', value: 'csv' },
 			],
 			required: true,
 			default: 'docx',
 			description:
-				'将云文档导出为本地文件后的扩展名。doc/docx 支持导出 docx/pdf；sheet/bitable 支持导出 xlsx/csv。',
+				'将云文档导出为本地文件后的扩展名。导出为 Word 文档时，文档内资源大小总计不可超过 1 GB；导出为 PDF 文件时，文档内资源大小总计不可超过 128 MB。',
+			displayOptions: {
+				show: {
+					type: ['doc', 'docx'],
+				},
+			},
+		},
+		{
+			displayName: '导出文件格式',
+			name: 'file_extension',
+			type: 'options',
+			options: [
+				{ name: 'Microsoft Excel 格式 (XLSX)', value: 'xlsx' },
+				{ name: 'CSV 格式 (CSV)', value: 'csv' },
+			],
+			required: true,
+			default: 'xlsx',
+			description: '将云文档导出为本地文件后的扩展名。',
+			displayOptions: {
+				show: {
+					type: ['sheet', 'bitable'],
+				},
+			},
 		},
 		{
 			displayName: '子表ID',
@@ -108,10 +135,7 @@ const SpaceExportOperate: ResourceOperations = {
 			default: {},
 			options: [
 				{
-					displayName: '自定义文件名',
-					name: 'fileName',
-					type: 'string',
-					default: '',
+					...fileNameOption,
 					description: '自定义保存的文件名（包含扩展名，如 myfile.pdf）。留空则使用原文档名称。',
 				},
 				{
@@ -134,17 +158,8 @@ const SpaceExportOperate: ResourceOperations = {
 					default: 60,
 					description: '查询导出任务状态的最大轮询次数。超过后将抛出超时错误。',
 				},
-				{
-					displayName: 'Timeout',
-					name: 'timeout',
-					type: 'number',
-					typeOptions: {
-						minValue: 0,
-					},
-					default: 0,
-					description:
-						'等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。',
-				},
+				batchingOption,
+				timeoutOption,
 			],
 		},
 	] as INodeProperties[],
@@ -155,7 +170,8 @@ const SpaceExportOperate: ResourceOperations = {
 		const sub_id = this.getNodeParameter('sub_id', index, '') as string;
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index, 'data') as string;
 		const options = this.getNodeParameter('options', index, {}) as {
-			fileName?: string;
+			file_name?: string;
+			fileName?: string; // 兼容旧数据
 			pollInterval?: number;
 			maxPolls?: number;
 			timeout?: number;
@@ -243,100 +259,29 @@ const SpaceExportOperate: ResourceOperations = {
 			throw new NodeOperationError(this.getNode(), '导出任务完成但未返回 file_token');
 		}
 
-		const response = await RequestUtils.originRequest.call(this, {
+		const buffer = await RequestUtils.request.call(this, {
 			method: 'GET',
 			url: `/open-apis/drive/v1/export_tasks/file/${fileToken}/download`,
+			encoding: 'arraybuffer',
 			json: false,
-			encoding: null,
-			resolveWithFullResponse: true,
-			headers: {
-				'Content-Type': 'application/json; charset=utf-8',
-			},
 		});
 
-		// 获取 MIME 类型映射
-		const mimeTypes: Record<string, string> = {
-			docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-			pdf: 'application/pdf',
-			xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-			csv: 'text/csv',
-		};
+		// 构建文件名：优先使用用户自定义文件名，其次使用导出结果中的文件名
+		const fileExtension = (exportResult.file_extension as string) || file_extension;
+		const baseName = (exportResult.file_name as string) || 'exported_file';
+		const defaultFileName = `${baseName}.${fileExtension}`;
+		// 兼容旧数据：优先使用 file_name，其次使用 fileName
+		const fileName = (options.file_name || options.fileName)?.trim() || defaultFileName;
 
-		// 优先使用响应头的 content-type，否则根据扩展名确定
-		const fileExtension = exportResult.file_extension as string || file_extension;
-		const contentType =
-			response.headers?.['content-type'] ||
-			mimeTypes[fileExtension] ||
-			'application/octet-stream';
-
-		// 构建文件名：优先使用导出结果中的文件名
-		const baseName = exportResult.file_name as string || 'exported_file';
-		let fullFileName = `${baseName}.${fileExtension}`;
-
-		// 尝试从 Content-Disposition 获取文件名
-		const contentDisposition = response.headers?.['content-disposition'];
-		if (contentDisposition) {
-			// 优先匹配 RFC 5987 格式: filename*=UTF-8''encoded_filename
-			const rfc5987Match = contentDisposition.match(/filename\*\s*=\s*(?:UTF-8|utf-8)'[^']*'([^;\s]+)/i);
-			if (rfc5987Match && rfc5987Match[1]) {
-				try {
-					fullFileName = decodeURIComponent(rfc5987Match[1]);
-				} catch {
-					// 解码失败时尝试其他方式
-				}
-			} else {
-				// 回退到普通 filename 格式
-				const match = contentDisposition.match(/filename\s*=\s*((['"]).*?\2|[^;\s]+)/);
-				if (match && match[1]) {
-					let headerFileName = match[1].replace(/['"]/g, '');
-					try {
-						// 尝试 URL 解码
-						headerFileName = decodeURIComponent(headerFileName);
-					} catch {
-						// 尝试将 Latin-1 编码的字节转换为 UTF-8
-						try {
-							const bytes = new Uint8Array(headerFileName.split('').map((c: string) => c.charCodeAt(0)));
-							headerFileName = new TextDecoder('utf-8').decode(bytes);
-						} catch {
-							// 解码失败时保持原样
-						}
-					}
-					if (headerFileName) {
-						fullFileName = headerFileName;
-					}
-				}
-			}
-		}
-
-		// 如果用户提供了自定义文件名，则使用自定义文件名
-		if (options.fileName?.trim()) {
-			fullFileName = options.fileName.trim();
-		}
-
-		// 使用 n8n 的 prepareBinaryData 处理二进制数据
-		const binaryData = await this.helpers.prepareBinaryData(
-			Buffer.from(response.body),
-			fullFileName,
-			contentType,
-		);
+		const binaryData = await this.helpers.prepareBinaryData(buffer, fileName);
 
 		return {
-			json: {
-				ticket,
-				file_token: fileToken,
-				file_name: exportResult.file_name,
-				file_extension: exportResult.file_extension,
-				file_size: exportResult.file_size,
-				type: exportResult.type,
-				fileName: fullFileName,
-				mimeType: contentType,
-			},
 			binary: {
 				[binaryPropertyName]: binaryData,
 			},
+			json: binaryData,
 		};
 	},
 };
 
 export default SpaceExportOperate;
-

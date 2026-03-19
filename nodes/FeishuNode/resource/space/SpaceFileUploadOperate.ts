@@ -1,12 +1,20 @@
-import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, IHttpRequestOptions, NodeOperationError } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
 import NodeUtils from '../../../help/utils/NodeUtils';
+import FormData from 'form-data';
+import {
+	fileFieldNameOption,
+	fileNameOption,
+	batchingOption,
+	timeoutOption,
+} from '../../../help/utils/sharedOptions';
 
 const SpaceFileUploadOperate: ResourceOperations = {
 	name: '上传文件',
 	value: 'space:fileUpload',
-	order: 51,
+	order: 60,
+	description: '上传文件指将本地环境的各类文件上传至云空间中，文件大小不超过20MB',
 	options: [
 		{
 			displayName: '文件夹 Token',
@@ -16,14 +24,7 @@ const SpaceFileUploadOperate: ResourceOperations = {
 			default: '',
 			description: '云空间中文件夹的 token，获取方式见飞书文档',
 		},
-		{
-			displayName: '二进制文件字段',
-			name: 'fileFieldName',
-			type: 'string',
-			default: 'data',
-			required: true,
-			description: '输入数据中包含文件二进制数据的字段名',
-		},
+		fileFieldNameOption,
 		{
 			displayName: '选项',
 			name: 'options',
@@ -31,13 +32,7 @@ const SpaceFileUploadOperate: ResourceOperations = {
 			placeholder: '添加选项',
 			default: {},
 			options: [
-				{
-					displayName: '文件名',
-					name: 'file_name',
-					type: 'string',
-					default: '',
-					description: '自定义文件名，例如：demo.pdf。留空则从二进制数据中自动获取。最大长度250字符',
-				},
+				fileNameOption,
 				{
 					displayName: '文件校验和',
 					name: 'checksum',
@@ -45,17 +40,8 @@ const SpaceFileUploadOperate: ResourceOperations = {
 					default: '',
 					description: '文件的 Adler-32 校验和',
 				},
-				{
-					displayName: 'Timeout',
-					name: 'timeout',
-					type: 'number',
-					typeOptions: {
-						minValue: 0,
-					},
-					default: 0,
-					description:
-						'等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。',
-				},
+				batchingOption,
+				timeoutOption,
 			],
 		},
 	],
@@ -71,13 +57,19 @@ const SpaceFileUploadOperate: ResourceOperations = {
 		const file = (await NodeUtils.buildUploadFileData.call(this, fileFieldName, index)) as any;
 
 		if (!file || !file.value) {
-			throw new NodeOperationError(this.getNode(), '未找到文件数据，请检查二进制文件字段名是否正确');
+			throw new NodeOperationError(
+				this.getNode(),
+				'未找到文件数据，请检查二进制文件字段名是否正确',
+			);
 		}
 
 		// 优先使用用户定义的文件名，否则从二进制数据中获取
 		const file_name = options.file_name || file.options?.filename;
 		if (!file_name) {
-			throw new NodeOperationError(this.getNode(), '文件名不能为空，请在选项中指定文件名或确保二进制数据包含文件名');
+			throw new NodeOperationError(
+				this.getNode(),
+				'文件名不能为空，请在选项中指定文件名或确保二进制数据包含文件名',
+			);
 		}
 
 		if (file_name.length > 250) {
@@ -86,36 +78,31 @@ const SpaceFileUploadOperate: ResourceOperations = {
 
 		const fileSize = file.value.length;
 		if (fileSize > 20971520) {
-			throw new NodeOperationError(this.getNode(), '文件大小不能超过20MB，如需上传更大文件请使用分片上传接口');
+			throw new NodeOperationError(
+				this.getNode(),
+				'文件大小不能超过20MB，如需上传更大文件请使用分片上传接口',
+			);
 		}
 
-		const formData: IDataObject = {
-			file_name,
-			parent_type: 'explorer',
-			parent_node,
-			size: fileSize,
-			file,
-		};
+		const formData = new FormData();
+		formData.append('file_name', file_name);
+		formData.append('parent_type', 'explorer');
+		formData.append('parent_node', parent_node);
+		formData.append('size', fileSize);
+		formData.append('file', file.value);
 
 		// 添加可选的校验和参数
 		if (options.checksum) {
-			formData.checksum = options.checksum;
-		}
-
-		// 构建请求选项
-		const requestOptions: IDataObject = {};
-		if (options.timeout) {
-			requestOptions.timeout = options.timeout;
+			formData.append('checksum', options.checksum);
 		}
 
 		return RequestUtils.request.call(this, {
 			method: 'POST',
 			url: '/open-apis/drive/v1/files/upload_all',
-			formData,
-			...requestOptions,
-		});
+			body: formData,
+			timeout: options.timeout,
+		} as IHttpRequestOptions);
 	},
 };
 
 export default SpaceFileUploadOperate;
-

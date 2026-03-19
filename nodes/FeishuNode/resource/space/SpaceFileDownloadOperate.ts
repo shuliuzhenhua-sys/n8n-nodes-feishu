@@ -1,31 +1,30 @@
 import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
+import {
+	binaryPropertyNameOption,
+	fileNameOption,
+	mimeTypeOption,
+	batchingOption,
+	timeoutOption,
+} from '../../../help/utils/sharedOptions';
 
 const SpaceFileDownloadOperate: ResourceOperations = {
 	name: '下载文件',
 	value: 'space:fileDownload',
-	order: 60,
+	order: 80,
+	description: '下载云空间中的文件，如 PDF 文件。不包含飞书文档、电子表格以及多维表格等在线文档',
 	options: [
 		{
-			displayName: '素材Token',
+			displayName: '文件Token',
 			name: 'file_token',
+			// eslint-disable-next-line n8n-nodes-base/node-param-type-options-password-missing
 			type: 'string',
 			required: true,
-			typeOptions: {
-				password: true,
-			},
 			default: '',
-			description: '素材的唯一标识 Token，通过文件列表等接口获取',
+			description: '文件的 token，获取方式见文件概述',
 		},
-		{
-			displayName: '输出字段名',
-			name: 'binaryPropertyName',
-			type: 'string',
-			default: 'data',
-			required: true,
-			description: '用于存储下载文件的二进制数据的字段名',
-		},
+		binaryPropertyNameOption,
 		{
 			displayName: '选项',
 			name: 'options',
@@ -33,21 +32,10 @@ const SpaceFileDownloadOperate: ResourceOperations = {
 			placeholder: '添加选项',
 			default: {},
 			options: [
-				{
-					displayName: '自定义文件名',
-					name: 'fileName',
-					type: 'string',
-					default: '',
-					description: '自定义保存的文件名（包含扩展名）',
-				},
-				{
-					displayName: 'MIME Type',
-					name: 'mimeType',
-					type: 'string',
-					default: '',
-					description:
-						'自定义文件的 MIME 类型。如不填写，将使用响应头中的 Content-Type。常见类型：application/pdf、video/mp4、audio/opus',
-				},
+				fileNameOption,
+				mimeTypeOption,
+				batchingOption,
+				timeoutOption,
 			],
 		},
 	],
@@ -55,58 +43,31 @@ const SpaceFileDownloadOperate: ResourceOperations = {
 		const file_token = this.getNodeParameter('file_token', index) as string;
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const options = this.getNodeParameter('options', index, {}) as {
-			fileName?: string;
+			file_name?: string;
+			fileName?: string; // 兼容旧数据
 			mimeType?: string;
+			timeout?: number;
 		};
 
-		const response = await RequestUtils.originRequest.call(this, {
+		const buffer = await RequestUtils.request.call(this, {
 			method: 'GET',
-			url: `/open-apis/drive/v1/medias/${file_token}/download`,
+			url: `/open-apis/drive/v1/files/${file_token}/download`,
+			encoding: 'arraybuffer',
 			json: false,
-			encoding: null,
-			resolveWithFullResponse: true,
-			headers: {
-				'Content-Type': 'application/json; charset=utf-8',
-			},
+			timeout: options.timeout || undefined,
 		});
 
-		const contentType =
-			options.mimeType?.trim() ||
-			response.headers?.['content-type'] ||
-			'application/octet-stream';
+		// 兼容旧数据：优先使用 file_name，其次使用 fileName
+		const fileName = (options.file_name || options.fileName)?.trim() || undefined;
+		const mimeType = options.mimeType?.trim() || undefined;
 
-		let defaultFileName = file_token;
-		const contentDisposition = response.headers?.['content-disposition'];
-		if (contentDisposition) {
-			const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-			if (match && match[1]) {
-				defaultFileName = match[1].replace(/['"]/g, '');
-				try {
-					defaultFileName = decodeURIComponent(defaultFileName);
-				} catch {
-					// 解码失败时保持原样
-				}
-			}
-		}
-
-		const fileName = options.fileName?.trim() || defaultFileName;
-
-		const binaryData = await this.helpers.prepareBinaryData(
-			Buffer.from(response.body),
-			fileName,
-			contentType,
-		);
+		const binaryData = await this.helpers.prepareBinaryData(buffer, fileName, mimeType);
 
 		return {
 			binary: {
 				[binaryPropertyName]: binaryData,
 			},
-			json: {
-				file_token,
-				fileName,
-				fileSize: response.body.length,
-				mimeType: contentType,
-			},
+			json: binaryData,
 		};
 	},
 };

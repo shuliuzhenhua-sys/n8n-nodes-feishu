@@ -1,10 +1,12 @@
-import {IDataObject, IExecuteFunctions, INodeProperties} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, INodeProperties, IHttpRequestOptions } from 'n8n-workflow';
 import RequestUtils from '../../../help/utils/RequestUtils';
 import { ResourceOperations } from '../../../help/type/IResource';
+import { batchingOption, timeoutOption } from '../../../help/utils/sharedOptions';
 
 const DocBlockGetContentOperate: ResourceOperations = {
 	name: '获取块的内容',
 	value: 'doc:block:getContent',
+	order: 60,
 	options: [
 		{
 			displayName: '文档 ID',
@@ -48,7 +50,14 @@ const DocBlockGetContentOperate: ResourceOperations = {
 				},
 			],
 		},
-		{ displayName: 'Options', name: 'options', type: 'collection', placeholder: 'Add option', default: {}, options: [{ displayName: 'Batching', name: 'batching', placeholder: 'Add Batching', type: 'fixedCollection', typeOptions: { multipleValues: false }, default: { batch: {} }, options: [{ displayName: 'Batching', name: 'batch', values: [{ displayName: 'Items per Batch', name: 'batchSize', type: 'number', typeOptions: { minValue: 1 }, default: 50, description: '每批并发请求数量。添加此选项后启用并发模式。0 将被视为 1。' }, { displayName: 'Batch Interval (Ms)', name: 'batchInterval', type: 'number', typeOptions: { minValue: 0 }, default: 1000, description: '每批请求之间的时间（毫秒）。0 表示禁用。' }] }] }, { displayName: 'Timeout', name: 'timeout', type: 'number', typeOptions: { minValue: 0 }, default: 0, description: '等待服务器发送响应头（并开始响应体）的时间（毫秒），超过此时间将中止请求。0 表示不限制超时。' }] },
+		{
+			displayName: 'Options',
+			name: 'options',
+			type: 'collection',
+			placeholder: 'Add option',
+			default: {},
+			options: [batchingOption, timeoutOption],
+		},
 	] as INodeProperties[],
 	async call(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 		const document_id = this.getNodeParameter('document_id', index) as string;
@@ -56,10 +65,14 @@ const DocBlockGetContentOperate: ResourceOperations = {
 		const document_revision_id = this.getNodeParameter('document_revision_id', index, -1) as number;
 		const user_id_type = this.getNodeParameter('user_id_type', index, 'open_id') as string;
 		const options = this.getNodeParameter('options', index, {}) as {
-		timeout?: number;
-	};
+			timeout?: number;
+		};
 		const qs = { document_revision_id, user_id_type };
-		const requestOptions: IDataObject = { method: 'GET', url: `/open-apis/docx/v1/documents/${document_id}/blocks/${block_id}`, qs };
+		const requestOptions: IHttpRequestOptions = {
+			method: 'GET',
+			url: `/open-apis/docx/v1/documents/${document_id}/blocks/${block_id}`,
+			qs,
+		};
 		if (options.timeout) requestOptions.timeout = options.timeout;
 
 		return RequestUtils.request.call(this, requestOptions);
